@@ -35,8 +35,7 @@ foreach ($sessions as $s) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= htmlspecialchars($settings['hotspot_name']) ?> - Login Hotspot</title>
     <meta name="description" content="Halaman Login Voucher & Member Hotspot 4G LTE Orange Pi Gateway">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/splash.css">
     <link rel="icon" type="image/png" href="assets/orange-pi-logo.png">
     <style>
         body.splash-page {
@@ -200,12 +199,12 @@ foreach ($sessions as $s) {
 
                 <div style="margin-top: 16px; display: flex; gap: 10px;">
                     <a href="https://www.google.com" target="_blank" class="btn-primary-neumorphic" style="flex: 1; padding: 12px; text-decoration: none; font-size: 13px; justify-content: center;">
-                        <i class="bi bi-globe"></i>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="2" y1="12" x2="22" y2="12"></line><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"></path></svg>
                         <span>Buka Internet</span>
                     </a>
 
                     <button type="button" class="btn-new-device" style="padding: 12px 18px; font-size: 12.5px; color: #ef4444; justify-content: center; cursor: pointer;" onclick="handleClientLogout()" title="Keluar / Putuskan Akses">
-                        <i class="bi bi-box-arrow-right"></i>
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path><polyline points="16 17 21 12 16 7"></polyline><line x1="21" y1="12" x2="9" y2="12"></line></svg>
                         <span>Logout</span>
                     </button>
                 </div>
@@ -216,11 +215,11 @@ foreach ($sessions as $s) {
                 <!-- Neumorphic Login Mode Switcher -->
                 <div class="nm-segmented-switch" style="width: 100%; display: flex; margin-bottom: 14px;">
                     <button type="button" class="nm-seg-btn active" id="btnTabVoucher" onclick="switchLoginMode('voucher')" style="flex: 1; justify-content: center;">
-                        <i class="bi bi-ticket-perforated-fill"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M4 4a2 2 0 0 0-2 2v3a2 2 0 0 1 0 4v3a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-3a2 2 0 0 1 0-4V6a2 2 0 0 0-2-2H4zm5 3a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1zm0 4a1 1 0 0 1 1-1h4a1 1 0 1 1 0 2h-4a1 1 0 0 1-1-1z"/></svg>
                         <span>Kode Voucher</span>
                     </button>
                     <button type="button" class="nm-seg-btn" id="btnTabMember" onclick="switchLoginMode('member')" style="flex: 1; justify-content: center;">
-                        <i class="bi bi-person-badge-fill"></i>
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
                         <span>Akun Member</span>
                     </button>
                 </div>
@@ -237,7 +236,7 @@ foreach ($sessions as $s) {
                             </div>
 
                             <button type="submit" class="btn-primary-neumorphic" id="btnSubmitVoucher" style="width: 100%; padding: 12px; font-size: 13.5px; justify-content: center;">
-                                <i class="bi bi-rocket-takeoff-fill"></i>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M13.13 2.5a.75.75 0 0 0-1.26 0l-4.5 7.5a.75.75 0 0 0 .65 1.13h2.48v6.12a.75.75 0 0 0 1.5 0v-6.12h2.48a.75.75 0 0 0 .65-1.13l-4.5-7.5z"/></svg>
                                 <span>Hubungkan Voucher</span>
                             </button>
                         </div>
@@ -263,7 +262,7 @@ foreach ($sessions as $s) {
                             </div>
 
                             <button type="submit" class="btn-primary-neumorphic" id="btnSubmitMember" style="width: 100%; padding: 12px; font-size: 13.5px; justify-content: center; margin-top: 4px;">
-                                <i class="bi bi-box-arrow-in-right"></i>
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"></path><polyline points="10 17 15 12 10 7"></polyline><line x1="15" y1="12" x2="3" y2="12"></line></svg>
                                 <span>Login Akun Member</span>
                             </button>
                         </div>
@@ -271,10 +270,10 @@ foreach ($sessions as $s) {
                 </div>
 
                 <?php if (!empty($settings['free_trial_enabled'])): ?>
-                    <!-- Free Trial 1 Menit Button -->
+                    <!-- Free Trial Button -->
                     <div style="text-align: center; margin-top: 14px; padding-top: 12px; border-top: 1px dashed rgba(182, 198, 220, 0.45);">
                         <button type="button" class="btn-new-device" style="width: 100%; padding: 11px; font-size: 12px; justify-content: center; cursor: pointer;" onclick="handleFreeTrialClick()">
-                            <i class="bi bi-clock-history" style="color: #8b5cf6; font-size: 14px;"></i>
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="#8b5cf6"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zm4.2 14.2L11 13V7h1.5v5.2l4.5 2.7-.8 1.3z"/></svg>
                             <span>Coba Gratis <?= $settings['free_trial_duration_min'] ?? 1 ?> Menit (Free Trial)</span>
                         </button>
                     </div>
@@ -286,7 +285,7 @@ foreach ($sessions as $s) {
         <div style="text-align: center; font-size: 11.5px; color: var(--text-muted); border-top: 1px dashed rgba(182, 198, 220, 0.45); padding-top: 14px;">
             <?php if (!empty($settings['contact_person'])): ?>
                 <div style="margin-bottom: 6px; display: inline-flex; align-items: center; gap: 6px; background: var(--bg-card); box-shadow: var(--nm-raised-sm); border: 1px solid rgba(255, 255, 255, 0.85); border-radius: var(--radius-pill); padding: 4px 12px;">
-                    <i class="bi bi-whatsapp" style="color: #25d366; font-size: 13px;"></i>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="#25d366"><path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981z"/></svg>
                     <span>Beli Voucher: <strong style="color: var(--text-heading);"><?= htmlspecialchars($settings['contact_person']) ?></strong></span>
                 </div>
             <?php endif; ?>
@@ -295,7 +294,7 @@ foreach ($sessions as $s) {
             </div>
             <div style="margin-top: 10px;">
                 <a href="http://192.168.1.2" style="font-size: 11px; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-pill); background: rgba(182, 198, 220, 0.2);">
-                    <i class="bi bi-shield-lock-fill" style="color: #0284c7;"></i>
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="#0284c7"><path d="M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zm3.1-9H8.9V6c0-1.71 1.39-3.1 3.1-3.1 1.71 0 3.1 1.39 3.1 3.1v2z"/></svg>
                     <span>Masuk ke Dasbor Admin (192.168.1.2)</span>
                 </a>
             </div>
