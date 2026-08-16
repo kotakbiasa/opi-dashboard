@@ -616,11 +616,11 @@ class CaptivePortal {
         $escapedMac = escapeshellarg(strtolower($mac));
 
         if (!empty($mac) && preg_match('/^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i', $mac)) {
-            @shell_exec("iptables -I OCANAP_PORTAL_AUTH 1 -s {$escapedIp} -m mac --mac-source {$escapedMac} -j ACCEPT 2>/dev/null");
-            @shell_exec("iptables -t nat -I OCANAP_PORTAL_NAT 1 -s {$escapedIp} -m mac --mac-source {$escapedMac} -j RETURN 2>/dev/null");
+            @shell_exec("sudo /usr/sbin/iptables -I OCANAP_PORTAL_AUTH 1 -s {$escapedIp} -m mac --mac-source {$escapedMac} -j ACCEPT 2>/dev/null");
+            @shell_exec("sudo /usr/sbin/iptables -t nat -I OCANAP_PORTAL_NAT 1 -s {$escapedIp} -m mac --mac-source {$escapedMac} -j RETURN 2>/dev/null");
         } else {
-            @shell_exec("iptables -I OCANAP_PORTAL_AUTH 1 -s {$escapedIp} -j ACCEPT 2>/dev/null");
-            @shell_exec("iptables -t nat -I OCANAP_PORTAL_NAT 1 -s {$escapedIp} -j RETURN 2>/dev/null");
+            @shell_exec("sudo /usr/sbin/iptables -I OCANAP_PORTAL_AUTH 1 -s {$escapedIp} -j ACCEPT 2>/dev/null");
+            @shell_exec("sudo /usr/sbin/iptables -t nat -I OCANAP_PORTAL_NAT 1 -s {$escapedIp} -j RETURN 2>/dev/null");
         }
 
         // Also sync with system session file for daemon compatibility
@@ -639,11 +639,11 @@ class CaptivePortal {
         $escapedMac = escapeshellarg(strtolower($mac));
 
         if (!empty($mac) && preg_match('/^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i', $mac)) {
-            @shell_exec("iptables -D OCANAP_PORTAL_AUTH -s {$escapedIp} -m mac --mac-source {$escapedMac} -j ACCEPT 2>/dev/null");
-            @shell_exec("iptables -t nat -D OCANAP_PORTAL_NAT -s {$escapedIp} -m mac --mac-source {$escapedMac} -j RETURN 2>/dev/null");
+            @shell_exec("sudo /usr/sbin/iptables -D OCANAP_PORTAL_AUTH -s {$escapedIp} -m mac --mac-source {$escapedMac} -j ACCEPT 2>/dev/null");
+            @shell_exec("sudo /usr/sbin/iptables -t nat -D OCANAP_PORTAL_NAT -s {$escapedIp} -m mac --mac-source {$escapedMac} -j RETURN 2>/dev/null");
         }
-        @shell_exec("iptables -D OCANAP_PORTAL_AUTH -s {$escapedIp} -j ACCEPT 2>/dev/null");
-        @shell_exec("iptables -t nat -D OCANAP_PORTAL_NAT -s {$escapedIp} -j RETURN 2>/dev/null");
+        @shell_exec("sudo /usr/sbin/iptables -D OCANAP_PORTAL_AUTH -s {$escapedIp} -j ACCEPT 2>/dev/null");
+        @shell_exec("sudo /usr/sbin/iptables -t nat -D OCANAP_PORTAL_NAT -s {$escapedIp} -j RETURN 2>/dev/null");
 
         $sysSessions = '/etc/ocanap/portal_sessions.json';
         if (file_exists(self::$sessionsFile) && is_dir(dirname($sysSessions))) {
