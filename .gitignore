@@ -1,0 +1,10 @@
+# Session & Temp Data
+*.tmp
+*.log
+data/portal_sessions.json
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
