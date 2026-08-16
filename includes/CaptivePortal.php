@@ -374,6 +374,7 @@ class CaptivePortal {
 
         $sessions[] = $newSession;
         @file_put_contents(self::$sessionsFile, json_encode($sessions, JSON_PRETTY_PRINT));
+        self::authorizeClientIptables($clientIp, $clientMac);
 
         return [
             'success' => true,
@@ -448,6 +449,7 @@ class CaptivePortal {
 
         $sessions[] = $newSession;
         @file_put_contents(self::$sessionsFile, json_encode($sessions, JSON_PRETTY_PRINT));
+        self::authorizeClientIptables($clientIp, $clientMac);
 
         return [
             'success' => true,
@@ -562,6 +564,7 @@ class CaptivePortal {
 
         $sessions[] = $newSession;
         @file_put_contents(self::$sessionsFile, json_encode($sessions, JSON_PRETTY_PRINT));
+        self::authorizeClientIptables($clientIp, $clientMac);
 
         return [
             'success' => true,
@@ -575,6 +578,12 @@ class CaptivePortal {
      */
     public static function kickSession(string $sessionId): bool {
         $sessions = self::getActiveSessions();
+        foreach ($sessions as $s) {
+            if ($s['session_id'] === $sessionId || $s['ip'] === $sessionId || strtoupper($s['mac']) === strtoupper($sessionId)) {
+                self::deauthorizeClientIptables($s['ip'] ?? '', $s['mac'] ?? '');
+            }
+        }
+
         $filtered = array_values(array_filter($sessions, function($s) use ($sessionId) {
             return $s['session_id'] !== $sessionId && $s['ip'] !== $sessionId && strtoupper($s['mac']) !== strtoupper($sessionId);
         }));
@@ -586,6 +595,8 @@ class CaptivePortal {
      * Public Client Self-Logout
      */
     public static function logoutSession(string $clientIp, string $clientMac): bool {
+        self::deauthorizeClientIptables($clientIp, $clientMac);
+
         $sessions = self::getActiveSessions();
         $filtered = array_values(array_filter($sessions, function($s) use ($clientIp, $clientMac) {
             $matchIp = (!empty($clientIp) && isset($s['ip']) && $s['ip'] === $clientIp);
@@ -594,6 +605,50 @@ class CaptivePortal {
         }));
 
         return (bool)@file_put_contents(self::$sessionsFile, json_encode($filtered, JSON_PRETTY_PRINT));
+    }
+
+    /**
+     * Helper: Allow client in iptables
+     */
+    public static function authorizeClientIptables(string $ip, string $mac = ''): void {
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) return;
+        $escapedIp = escapeshellarg($ip);
+        $escapedMac = escapeshellarg(strtolower($mac));
+
+        if (!empty($mac) && preg_match('/^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i', $mac)) {
+            @shell_exec("iptables -I OCANAP_PORTAL_AUTH 1 -s {$escapedIp} -m mac --mac-source {$escapedMac} -j ACCEPT 2>/dev/null");
+            @shell_exec("iptables -t nat -I OCANAP_PORTAL_NAT 1 -s {$escapedIp} -m mac --mac-source {$escapedMac} -j RETURN 2>/dev/null");
+        } else {
+            @shell_exec("iptables -I OCANAP_PORTAL_AUTH 1 -s {$escapedIp} -j ACCEPT 2>/dev/null");
+            @shell_exec("iptables -t nat -I OCANAP_PORTAL_NAT 1 -s {$escapedIp} -j RETURN 2>/dev/null");
+        }
+
+        // Also sync with system session file for daemon compatibility
+        $sysSessions = '/etc/ocanap/portal_sessions.json';
+        if (file_exists(self::$sessionsFile) && is_dir(dirname($sysSessions))) {
+            @copy(self::$sessionsFile, $sysSessions);
+        }
+    }
+
+    /**
+     * Helper: Remove client from iptables
+     */
+    public static function deauthorizeClientIptables(string $ip, string $mac = ''): void {
+        if (!filter_var($ip, FILTER_VALIDATE_IP)) return;
+        $escapedIp = escapeshellarg($ip);
+        $escapedMac = escapeshellarg(strtolower($mac));
+
+        if (!empty($mac) && preg_match('/^([0-9a-f]{2}[:-]){5}[0-9a-f]{2}$/i', $mac)) {
+            @shell_exec("iptables -D OCANAP_PORTAL_AUTH -s {$escapedIp} -m mac --mac-source {$escapedMac} -j ACCEPT 2>/dev/null");
+            @shell_exec("iptables -t nat -D OCANAP_PORTAL_NAT -s {$escapedIp} -m mac --mac-source {$escapedMac} -j RETURN 2>/dev/null");
+        }
+        @shell_exec("iptables -D OCANAP_PORTAL_AUTH -s {$escapedIp} -j ACCEPT 2>/dev/null");
+        @shell_exec("iptables -t nat -D OCANAP_PORTAL_NAT -s {$escapedIp} -j RETURN 2>/dev/null");
+
+        $sysSessions = '/etc/ocanap/portal_sessions.json';
+        if (file_exists(self::$sessionsFile) && is_dir(dirname($sysSessions))) {
+            @copy(self::$sessionsFile, $sysSessions);
+        }
     }
 
     /**
