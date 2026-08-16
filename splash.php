@@ -293,6 +293,12 @@ foreach ($sessions as $s) {
             <div style="font-size: 10px; color: var(--text-muted); opacity: 0.8; margin-top: 4px;">
                 Orange Pi Zero 2 Gateway Hotspot &bull; Protected by AdGuard Home DNS
             </div>
+            <div style="margin-top: 10px;">
+                <a href="http://192.168.1.2" style="font-size: 11px; color: var(--text-muted); text-decoration: none; display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: var(--radius-pill); background: rgba(182, 198, 220, 0.2);">
+                    <i class="bi bi-shield-lock-fill" style="color: #0284c7;"></i>
+                    <span>Masuk ke Dasbor Admin (192.168.1.2)</span>
+                </a>
+            </div>
         </div>
     </div>
 
