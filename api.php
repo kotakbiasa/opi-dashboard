@@ -4,6 +4,11 @@ header('Content-Type: application/json; charset=utf-8');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type');
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: DENY');
+header('X-XSS-Protection: 1; mode=block');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'");
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -37,9 +42,14 @@ $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '192.
 if (strpos($clientIp, ',') !== false) {
     $clientIp = trim(explode(',', $clientIp)[0]);
 }
+// Validate IP address to prevent command injection
+if (!filter_var($clientIp, FILTER_VALIDATE_IP)) {
+    $clientIp = '192.168.1.100';
+}
 
 $clientMac = '00:00:00:00:00:00';
-$arpOutput = @shell_exec("ip neigh show {$clientIp} 2>/dev/null");
+$escapedIp = escapeshellarg($clientIp);
+$arpOutput = @shell_exec("ip neigh show {$escapedIp} 2>/dev/null");
 if ($arpOutput && preg_match('/lladdr\s+([0-9a-f:]{17})/i', $arpOutput, $m)) {
     $clientMac = strtoupper($m[1]);
 } else {

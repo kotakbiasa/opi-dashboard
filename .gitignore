@@ -1,7 +1,10 @@
+# Sensitive Data (user data, credentials, sessions)
+data/*.json
+!data/.gitkeep
+
 # Session & Temp Data
 *.tmp
 *.log
-data/portal_sessions.json
 
 # OS & Editor files
 .DS_Store

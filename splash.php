@@ -9,9 +9,14 @@ $clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '192.
 if (strpos($clientIp, ',') !== false) {
     $clientIp = trim(explode(',', $clientIp)[0]);
 }
+// Validate IP address to prevent command injection
+if (!filter_var($clientIp, FILTER_VALIDATE_IP)) {
+    $clientIp = '192.168.1.100';
+}
 
 $clientMac = '00:00:00:00:00:00';
-$arpOutput = @shell_exec("ip neigh show {$clientIp} 2>/dev/null");
+$escapedIp = escapeshellarg($clientIp);
+$arpOutput = @shell_exec("ip neigh show {$escapedIp} 2>/dev/null");
 if ($arpOutput && preg_match('/lladdr\s+([0-9a-f:]{17})/i', $arpOutput, $m)) {
     $clientMac = strtoupper($m[1]);
 } else {

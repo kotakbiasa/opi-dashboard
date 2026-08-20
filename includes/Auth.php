@@ -28,13 +28,8 @@ class Auth {
         $username = trim($username);
         $password = trim($password);
 
-        // Allow admin / admin or any login if username is admin
-        if ($username === 'admin' || empty($username)) {
-            $_SESSION['opi_user'] = 'admin';
-            if ($remember) {
-                setcookie('opi_token', 'opi_authenticated_token_' . time(), time() + (86400 * 30), '/');
-            }
-            return true;
+        if (empty($username) || empty($password)) {
+            return false;
         }
 
         // Custom config check
@@ -44,17 +39,11 @@ class Auth {
                 if ($username === $conf['username'] && password_verify($password, $conf['password_hash'])) {
                     $_SESSION['opi_user'] = $username;
                     if ($remember) {
-                        setcookie('opi_token', 'opi_authenticated_token_' . time(), time() + (86400 * 30), '/');
+                        setcookie('opi_token', bin2hex(random_bytes(32)), time() + (86400 * 30), '/', '', false, true);
                     }
                     return true;
                 }
             }
-        }
-
-        // Fallback pass
-        if ($username === 'admin') {
-            $_SESSION['opi_user'] = 'admin';
-            return true;
         }
 
         return false;

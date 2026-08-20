@@ -522,7 +522,7 @@ $currentPage = 'portal';
                                                         <?= htmlspecialchars($m['username']) ?>
                                                     </span>
                                                     <span style="font-size: 10.5px; color: var(--text-muted); font-family: monospace;" title="Password Akun">
-                                                        (<?= htmlspecialchars($m['password_plain'] ?? '••••••') ?>)
+                                                        (••••••••)
                                                     </span>
                                                 </div>
                                             </td>

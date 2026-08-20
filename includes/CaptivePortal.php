@@ -408,7 +408,7 @@ class CaptivePortal {
         $matchedMember = null;
         foreach ($members as $m) {
             if (strtolower($m['username']) === $username) {
-                if (($m['password_plain'] ?? '') === $password || (isset($m['password_hash']) && password_verify($password, $m['password_hash']))) {
+                if (isset($m['password_hash']) && password_verify($password, $m['password_hash'])) {
                     $matchedMember = $m;
                     break;
                 }
@@ -483,7 +483,6 @@ class CaptivePortal {
 
         $newMember = [
             'username' => $username,
-            'password_plain' => $password,
             'password_hash' => password_hash($password, PASSWORD_DEFAULT),
             'fullname' => $fullname,
             'package_name' => $packageName,
