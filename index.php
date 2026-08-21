@@ -20,7 +20,7 @@ $currentPage = 'home';
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Gateway 4G LTE & Hotspot - Orange Pi Zero 2</title>
     <meta name="description" content="Pusat Kontrol & Telemetri Modem 4G LTE Hotspot Router Orange Pi Zero 2">
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link rel="stylesheet" href="assets/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="assets/orange-pi-logo.png">
 </head>
