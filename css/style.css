@@ -1,37 +1,55 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
 
 /* ==========================================================================
-   1. DESIGN TOKENS (CLAYMORPHISM / PUFFY 3D UI)
+   1. DESIGN TOKENS (COLORFUL CLAYMORPHISM / VIBRANT 3D UI)
    ========================================================================== */
 :root {
-    --bg-canvas: #e8eef6;
-    --bg-card: #eef2f7;
-    --bg-inset: #e0e7f0;
+    /* Vibrant gradient canvas */
+    --bg-canvas: linear-gradient(135deg, #e0e7ff 0%, #fce7f3 25%, #dbeafe 50%, #e0e7ff 75%, #fce7f3 100%);
+    --bg-canvas-solid: #e8eef6;
+    --bg-card: #ffffff;
+    --bg-inset: #f0f4f8;
 
     --text-heading: #0f172a;
     --text-main: #334155;
     --text-muted: #64748b;
     --text-subtle: #94a3b8;
 
-    /* Claymorphism Shadow Tokens — puffy, rounded, soft 3D */
-    --nm-raised: 8px 8px 20px rgba(163, 177, 198, 0.5), inset 2px 2px 6px rgba(255, 255, 255, 0.7), inset -2px -2px 6px rgba(163, 177, 198, 0.35);
-    --nm-raised-sm: 4px 4px 12px rgba(163, 177, 198, 0.45), inset 1px 1px 4px rgba(255, 255, 255, 0.7), inset -1px -1px 4px rgba(163, 177, 198, 0.3);
-    --nm-raised-lg: 14px 14px 30px rgba(160, 175, 200, 0.55), inset 3px 3px 8px rgba(255, 255, 255, 0.75), inset -3px -3px 8px rgba(160, 175, 200, 0.4);
-    --nm-pill: 9px 9px 18px rgba(163, 177, 198, 0.5), inset 2px 2px 5px rgba(255, 255, 255, 0.7), inset -2px -2px 5px rgba(163, 177, 198, 0.35);
+    /* Vibrant Claymorphism Shadow Tokens */
+    --nm-raised: 6px 6px 16px rgba(139, 92, 246, 0.15), -4px -4px 12px rgba(59, 130, 246, 0.1), inset 2px 2px 6px rgba(255, 255, 255, 0.8), inset -2px -2px 6px rgba(139, 92, 246, 0.08);
+    --nm-raised-sm: 3px 3px 10px rgba(139, 92, 246, 0.12), -2px -2px 6px rgba(59, 130, 246, 0.08), inset 1px 1px 4px rgba(255, 255, 255, 0.8), inset -1px -1px 4px rgba(139, 92, 246, 0.06);
+    --nm-raised-lg: 10px 10px 24px rgba(139, 92, 246, 0.18), -6px -6px 16px rgba(59, 130, 246, 0.12), inset 3px 3px 8px rgba(255, 255, 255, 0.85), inset -3px -3px 8px rgba(139, 92, 246, 0.1);
+    --nm-pill: 7px 7px 16px rgba(139, 92, 246, 0.15), -4px -4px 10px rgba(59, 130, 246, 0.1), inset 2px 2px 5px rgba(255, 255, 255, 0.8), inset -2px -2px 5px rgba(139, 92, 246, 0.08);
 
-    --nm-inset: inset 3px 3px 8px rgba(163, 177, 198, 0.55), inset -2px -2px 6px rgba(255, 255, 255, 0.6);
-    --nm-inset-sm: inset 2px 2px 5px rgba(163, 177, 198, 0.5), inset -1px -1px 4px rgba(255, 255, 255, 0.55);
-    --nm-inset-deep: inset 4px 4px 10px rgba(160, 175, 200, 0.6), inset -3px -3px 8px rgba(255, 255, 255, 0.55);
+    --nm-inset: inset 2px 2px 6px rgba(139, 92, 246, 0.12), inset -2px -2px 6px rgba(255, 255, 255, 0.7);
+    --nm-inset-sm: inset 1px 1px 4px rgba(139, 92, 246, 0.1), inset -1px -1px 4px rgba(255, 255, 255, 0.65);
+    --nm-inset-deep: inset 3px 3px 8px rgba(139, 92, 246, 0.15), inset -2px -2px 6px rgba(255, 255, 255, 0.6);
 
-    --color-primary: #0284c7;
-    --color-primary-light: #38bdf8;
-    --color-primary-dark: #0369a1;
+    /* Vibrant color palette */
+    --color-primary: #8b5cf6;
+    --color-primary-light: #a78bfa;
+    --color-primary-dark: #7c3aed;
     --color-cyan: #06b6d4;
     --color-green: #10b981;
     --color-orange: #f59e0b;
     --color-pink: #ec4899;
-    --color-teal: #0d9488;
+    --color-teal: #14b8a6;
     --color-danger: #ef4444;
+    --color-purple: #8b5cf6;
+    --color-indigo: #6366f1;
+    --color-yellow: #eab308;
+    --color-lime: #84cc16;
+
+    /* Section accent colors */
+    --accent-home: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    --accent-network: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+    --accent-modem: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --accent-adguard: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+    --accent-portal: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+    --accent-files: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+    --accent-services: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%);
+    --accent-settings: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+    --accent-usage: linear-gradient(135deg, #ff6b6b 0%, #feca57 100%);
 
     --radius-sm: 16px;
     --radius-md: 22px;
@@ -42,6 +60,59 @@
     --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
     --transition-base: 0.28s cubic-bezier(0.4, 0, 0.2, 1);
 }
+
+
+/* Colorful section accents */
+[data-page="home"] .room-card { border-top: 3px solid var(--color-purple); }
+[data-page="network"] .room-card { border-top: 3px solid var(--color-pink); }
+[data-page="modem"] .room-card { border-top: 3px solid var(--color-cyan); }
+[data-page="adguard"] .room-card { border-top: 3px solid var(--color-green); }
+[data-page="portal"] .room-card { border-top: 3px solid var(--color-orange); }
+[data-page="files"] .room-card { border-top: 3px solid var(--color-teal); }
+[data-page="services"] .room-card { border-top: 3px solid var(--color-danger); }
+[data-page="settings"] .room-card { border-top: 3px solid var(--color-yellow); }
+[data-page="usage"] .room-card { border-top: 3px solid var(--color-lime); }
+
+/* Vibrant icon badges */
+.room-icon-badge {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* Colorful button hover */
+.btn-primary-neumorphic:hover {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-light) 100%);
+    transform: translateY(-2px);
+    box-shadow: var(--nm-raised-lg);
+}
+
+/* Gradient header bar */
+.header-bar {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.1) 0%, rgba(59, 130, 246, 0.1) 100%);
+    backdrop-filter: blur(10px);
+}
+
+/* Colorful sidebar items */
+.sidebar-item:hover {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.15) 100%);
+}
+
+.sidebar-item.active {
+    background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-pink) 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4);
+}
+
+/* Animated pulse for status dots */
+.pulse-green-dot {
+    animation: pulse-colorful 2s ease-in-out infinite;
+}
+
+@keyframes pulse-colorful {
+    0%, 100% { box-shadow: 0 0 4px rgba(139, 92, 246, 0.5); }
+    50% { box-shadow: 0 0 12px rgba(139, 92, 246, 0.8), 0 0 20px rgba(236, 72, 153, 0.4); }
 }
 
 /* ==========================================================================
@@ -115,6 +186,8 @@
 }
 
 body {
+    background: var(--bg-canvas);
+    background-attachment: fixed;
     font-family: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--bg-canvas);
     color: var(--text-main);
@@ -157,6 +230,20 @@ input {
     font-family: inherit;
     border: none;
     outline: none;
+
+/* Dark mode also colorful */
+[data-theme="dark"] body {
+    background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+    background-attachment: fixed;
+}
+
+[data-theme="dark"] .header-bar {
+    background: linear-gradient(135deg, rgba(139, 92, 246, 0.15) 0%, rgba(236, 72, 153, 0.1) 100%);
+}
+
+[data-theme="dark"] .sidebar-item.active {
+    background: linear-gradient(135deg, #8b5cf6 0%, #ec4899 100%);
+}
 }
 
 /* ==========================================================================
