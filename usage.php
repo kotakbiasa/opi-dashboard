@@ -626,3 +626,40 @@ $currentPage = 'usage';
     </script>
 </body>
 </html>
+
+<!-- Bandwidth per IP Section -->
+<div class="room-card" style="margin-top:20px;">
+    <div class="room-card-top">
+        <span class="room-card-title">Bandwidth per IP</span>
+        <span class="room-spec-pill"><i class="bi bi-bar-chart-fill"></i></span>
+    </div>
+    <div class="room-card-body">
+        <button type="button" class="btn-primary-neumorphic" onclick="loadBandwidthPerIP()" style="padding:8px 16px;margin-bottom:10px;">
+            <i class="bi bi-arrow-clockwise"></i> <span>Refresh</span>
+        </button>
+        <div id="bwPerIP" style="max-height:300px;overflow-y:auto;">
+            <p style="color:var(--text-muted);font-size:12px;">Klik Refresh untuk melihat data</p>
+        </div>
+    </div>
+</div>
+
+<script>
+async function loadBandwidthPerIP() {
+    var res = await fetch('api.php?action=bandwidth_per_ip');
+    var data = await res.json();
+    var container = document.getElementById('bwPerIP');
+    if (data.success && data.devices.length > 0) {
+        var html = '<table style="width:100%;font-size:12px;">' +
+            '<tr><th style="text-align:left;padding:5px;">IP</th><th style="text-align:right;padding:5px;">Bytes</th><th style="text-align:right;padding:5px;">MB</th></tr>';
+        data.devices.forEach(function(d) {
+            html += '<tr><td style="padding:4px 5px;font-family:monospace;">' + d.ip + '</td>' +
+                '<td style="text-align:right;padding:4px 5px;">' + d.bytes.toLocaleString() + '</td>' +
+                '<td style="text-align:right;padding:4px 5px;">' + d.mb + '</td></tr>';
+        });
+        html += '</table>';
+        container.innerHTML = html;
+    } else {
+        container.innerHTML = '<p style="color:var(--text-muted);font-size:12px;">No data</p>';
+    }
+}
+</script>

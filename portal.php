@@ -447,6 +447,8 @@ $currentPage = 'portal';
                         </div>
 
                         <form id="formCreateMember" onsubmit="handleCreateMember(event)" style="margin-top: 12px;">
+            <input type="hidden" name="csrf_token" value="<?php echo Auth::csrfToken(); ?>">
+
                             <div style="display: flex; flex-direction: column; gap: 12px;">
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
                                     <div>

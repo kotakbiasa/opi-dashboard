@@ -2,6 +2,55 @@
 
 class Auth {
     private static string $configFile = __DIR__ . '/../data/auth.json';
+    private const MAX_LOGIN_ATTEMPTS = 5;
+    private const LOGIN_LOCKOUT_SECONDS = 60;
+
+    /** Generate CSRF token for current session */
+    public static function csrfToken(): string {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        if (empty($_SESSION['csrf_token'])) {
+            $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+        }
+        return $_SESSION['csrf_token'];
+    }
+
+    /** Verify CSRF token from request */
+    public static function csrfVerify(?string $token = null): bool {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $expected = $_SESSION['csrf_token'] ?? '';
+        if (empty($expected)) return false;
+        $provided = $token ?? ($_POST['csrf_token'] ?? '');
+        return hash_equals($expected, $provided);
+    }
+
+    /** Check if login is rate-limited */
+    public static function isRateLimited(): bool {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $attempts = $_SESSION['login_attempts'] ?? 0;
+        $lastTime = $_SESSION['last_attempt_time'] ?? 0;
+        if ($attempts >= self::MAX_LOGIN_ATTEMPTS) {
+            if (time() - $lastTime < self::LOGIN_LOCKOUT_SECONDS) {
+                return true;
+            }
+            // Reset after lockout expires
+            $_SESSION['login_attempts'] = 0;
+        }
+        return false;
+    }
+
+    /** Record a failed login attempt */
+    public static function recordFailedAttempt(): void {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $_SESSION['login_attempts'] = ($_SESSION['login_attempts'] ?? 0) + 1;
+        $_SESSION['last_attempt_time'] = time();
+    }
+
+    /** Reset login attempts (called on successful login) */
+    public static function resetLoginAttempts(): void {
+        if (session_status() === PHP_SESSION_NONE) session_start();
+        $_SESSION['login_attempts'] = 0;
+        $_SESSION['last_attempt_time'] = 0;
+    }
 
     public static function check(): bool {
         if (session_status() === PHP_SESSION_NONE) {
@@ -38,6 +87,12 @@ class Auth {
             if (is_array($conf) && isset($conf['username'], $conf['password_hash'])) {
                 if ($username === $conf['username'] && password_verify($password, $conf['password_hash'])) {
                     $_SESSION['opi_user'] = $username;
+                    // Prevent session fixation
+                    session_regenerate_id(true);
+                    // Reset rate limit
+                    self::resetLoginAttempts();
+                    // Regenerate CSRF token on login
+                    $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
                     if ($remember) {
                         setcookie('opi_token', bin2hex(random_bytes(32)), time() + (86400 * 30), '/', '', false, true);
                     }
@@ -46,6 +101,8 @@ class Auth {
             }
         }
 
+        // Record failed attempt for rate limiting
+        self::recordFailedAttempt();
         return false;
     }
 

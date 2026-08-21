@@ -17,12 +17,19 @@ $currentPage = 'home';
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Gateway 4G LTE & Hotspot - Orange Pi Zero 2</title>
     <meta name="description" content="Pusat Kontrol & Telemetri Modem 4G LTE Hotspot Router Orange Pi Zero 2">
+    <meta name="theme-color" content="#0284c7">
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="assets/orange-pi-logo.png">
     <link rel="stylesheet" href="assets/bootstrap-icons.min.css">
     <link rel="stylesheet" href="css/style.css">
     <link rel="icon" type="image/png" href="assets/orange-pi-logo.png">
+    <script>
+    // Load saved theme
+    (function(){var t=localStorage.getItem('opi-theme');if(t){document.documentElement.setAttribute('data-theme',t);}})();
+    </script>
 </head>
 <body class="<?= $isLoggedIn ? 'app-logged-in' : 'app-logged-out' ?>">
 
@@ -42,6 +49,19 @@ $currentPage = 'home';
 
                 <!-- Top 4 Router & Gateway KPI Metric Cards -->
                 <?php include __DIR__ . '/includes/overview.php'; ?>
+                <!-- Speed Test Card -->
+                <div class="room-card" data-metric-card="speedtest" style="cursor:pointer;" onclick="runSpeedTest()">
+                    <div class="room-card-top">
+                        <span class="room-card-title">Speed Test</span>
+                        <span class="room-spec-pill"><i class="bi bi-speedometer2"></i></span>
+                    </div>
+                    <div class="room-card-body">
+                        <div class="speedtest-results" id="speedtestResults">
+                            <p style="color:var(--text-muted);font-size:12px;">Klik untuk test kecepatan</p>
+                        </div>
+                    </div>
+                </div>
+
 
                 <!-- Middle Grid: CPU Thermal Dial + Hotspot & AdGuard Modules -->
                 <div class="middle-grid">

@@ -17,5 +17,10 @@ $board = $state['board'] ?? ['hostname' => 'orangepizero2', 'uptime' => '10m', '
             <span style="display:inline-block; width:7px; height:7px; border-radius:50%; background:#10b981; box-shadow:0 0 8px #10b981;"></span>
             <span id="headerUptimeText">Aktif: <?= htmlspecialchars($board['uptime'] ?? '10m') ?></span>
         </div>
+
+        <!-- Dark Mode Toggle -->
+        <button type="button" class="btn-new-device" id="btnDarkModeToggle" onclick="toggleTheme()" title="Toggle Dark Mode">
+            <i class="bi bi-moon-stars-fill" id="themeIcon" style="font-size: 15px;"></i>
+        </button>
     </div>
 </header>

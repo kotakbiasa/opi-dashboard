@@ -1,3 +1,33 @@
+// ==========================================================================
+// THEME TOGGLE (Dark Mode)
+// ==========================================================================
+function toggleTheme() {
+    var current = document.documentElement.getAttribute('data-theme');
+    var next = current === 'dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('opi-theme', next);
+    
+    // Update icon
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        if (next === 'dark') {
+            icon.className = 'bi bi-sun-fill';
+        } else {
+            icon.className = 'bi bi-moon-stars-fill';
+        }
+    }
+}
+
+// Sync icon on page load
+(function() {
+    var theme = localStorage.getItem('opi-theme') || 'light';
+    var icon = document.getElementById('themeIcon');
+    if (icon) {
+        icon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+    }
+})();
+
+
 /**
  * OPI-DASHBOARD: Neumorphic Real-Time Telemetry & Control Center
  * Full Javascript Controller for Orange Pi Zero 2 (Allwinner H616 • Armbian)
@@ -72,7 +102,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 tick.classList.remove('active');
                 tick.style.stroke = 'rgba(182, 198, 220, 0.45)';
             }
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
         // Status Label & Fan Animation Speed
         if (thermalStatusLabel) {
@@ -123,7 +176,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password })
-                });
+                
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
                 const data = await res.json();
 
                 if (data.success) {
@@ -148,7 +224,30 @@ document.addEventListener('DOMContentLoaded', () => {
                     btnLoginSubmit.innerHTML = '<span>Masuk</span>';
                 }
             }
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
     }
 
     // =========================================================================
@@ -202,7 +301,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const normalized = Math.max(0.1, Math.min(2.5, v));
             const y = Math.round(32 - (normalized / 2.5) * 26);
             return { x, y };
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
         let d = `M${points[0].x},${points[0].y}`;
         for (let i = 0; i < points.length - 1; i++) {
@@ -233,7 +355,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const x = Math.round(i * (200 / (dlHistory.length - 1)));
                 const y = Math.round(44 - (v / maxDl) * 36);
                 return { x, y };
-            });
+            
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
             let d = `M${pointsDl[0].x},${pointsDl[0].y}`;
             for (let i = 0; i < pointsDl.length - 1; i++) {
@@ -255,7 +400,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 const x = Math.round(i * (200 / (ulHistory.length - 1)));
                 const y = Math.round(44 - (v / maxUl) * 36);
                 return { x, y };
-            });
+            
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
             let d = `M${pointsUl[0].x},${pointsUl[0].y}`;
             for (let i = 0; i < pointsUl.length - 1; i++) {
@@ -377,7 +545,30 @@ document.addEventListener('DOMContentLoaded', () => {
             Object.values(freshState.networks).forEach(iface => {
                 totalRxMb += (iface.rx_mb || 0);
                 totalTxMb += (iface.tx_mb || 0);
-            });
+            
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
         }
 
         const liveTotalDlMb = document.getElementById('liveTotalDlMb');
@@ -475,7 +666,30 @@ document.addEventListener('DOMContentLoaded', () => {
         livePollingSwitch.addEventListener('change', (e) => {
             isPolling = e.target.checked;
             showToast(isPolling ? 'Telemetri Langsung Dilanjutkan' : 'Telemetri Langsung Dijeda', 'info');
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
     }
 
     // Start 2.0s Real-Time Polling Loop (Identical to usage.php)
@@ -513,7 +727,30 @@ document.addEventListener('DOMContentLoaded', () => {
             } finally {
                 setTimeout(() => btnTestPing.classList.remove('spinning'), 600);
             }
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
     }
 
     // Governor Switcher
@@ -523,7 +760,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ governor: gov })
-            });
+            
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
             const data = await res.json();
             if (data.success) {
                 showToast(`Mode Governor CPU diubah ke ${gov.toUpperCase()}`, 'success');
@@ -541,7 +801,30 @@ document.addEventListener('DOMContentLoaded', () => {
     if (govPowerSwitch) {
         govPowerSwitch.addEventListener('change', (e) => {
             setGovernor(e.target.checked ? 'performance' : 'ondemand');
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
     }
 
     // Restart Hotspot
@@ -552,13 +835,59 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ service: 'hostapd' })
-            });
+            
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
             const data = await res.json();
             if (data.success) showToast('Layanan hotspot berhasil dimulai ulang', 'success');
         } catch (e) {
             showToast('Gagal memulai ulang hotspot', 'info');
         }
-    });
+    
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
     // =========================================================================
     // 5. REBOOT SYSTEM MODAL
@@ -582,7 +911,30 @@ document.addEventListener('DOMContentLoaded', () => {
             btnConfirmReboot.textContent = 'Memulai Ulang...';
             showToast('Orange Pi Zero 2 sedang memulai ulang...', 'info');
             try {
-                await fetch('api.php?action=reboot_system', { method: 'POST' });
+                await fetch('api.php?action=reboot_system', { method: 'POST' 
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
             } catch (e) {}
             closeRebootModal();
             setTimeout(() => {
@@ -593,18 +945,87 @@ document.addEventListener('DOMContentLoaded', () => {
                     </div>
                 `;
             }, 1000);
-        });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
     }
 
     // Sidebar Logout
     document.getElementById('btnSidebarLogout')?.addEventListener('click', async () => {
         try {
-            await fetch('api.php?action=logout', { method: 'POST' });
+            await fetch('api.php?action=logout', { method: 'POST' 
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
             window.location.reload();
         } catch (e) {
             window.location.reload();
         }
-    });
+    
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
     // 2x2 Network Interfaces Click Switcher
     document.querySelectorAll('.room-nav-btn').forEach(btn => {
@@ -613,8 +1034,54 @@ document.addEventListener('DOMContentLoaded', () => {
             btn.classList.add('active');
             const ifaceLabel = btn.querySelector('span')?.textContent || 'Antarmuka';
             showToast(`Antarmuka Dipilih: ${ifaceLabel}`, 'info');
-        });
-    });
+        
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
+    
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
 
     // =========================================================================
     // 6. TOAST HELPER
@@ -675,7 +1142,30 @@ document.addEventListener('DOMContentLoaded', () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ enabled: enabled })
-            });
+            
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
+});
             const data = await res.json();
             if (data.success) {
                 showToast(data.message, 'success');
@@ -689,4 +1179,27 @@ document.addEventListener('DOMContentLoaded', () => {
     initRadialTicks();
     updateUI(state);
     pollState();
+
+// Speed Test
+async function runSpeedTest() {
+    var card = document.getElementById('speedtestResults');
+    if (!card) return;
+    card.innerHTML = '<p style="color:var(--color-primary);font-size:12px;">Testing... ⏳</p>';
+    
+    try {
+        var res = await fetch('api.php?action=speed_test');
+        var data = await res.json();
+        if (data.success) {
+            card.innerHTML = '<div style="display:flex;gap:15px;justify-content:center;">' +
+                '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-primary);">' + data.download + '</div><div style="font-size:10px;color:var(--text-muted);">↓ Mbps</div></div>' +
+                (data.upload > 0 ? '<div style="text-align:center;"><div style="font-size:22px;font-weight:800;color:var(--color-green);">' + data.upload + '</div><div style="font-size:10px;color:var(--text-muted);">↑ Mbps</div></div>' : '') +
+                '</div>' +
+                (data.ping > 0 ? '<div style="text-align:center;margin-top:5px;font-size:11px;color:var(--text-muted);">Ping: ' + data.ping + 'ms</div>' : '');
+        } else {
+            card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Test failed</p>';
+        }
+    } catch(e) {
+        card.innerHTML = '<p style="color:var(--color-danger);font-size:11px;">Error</p>';
+    }
+}
 });

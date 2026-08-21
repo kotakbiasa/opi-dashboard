@@ -650,6 +650,8 @@ $currentPage = 'settings';
                     </div>
 
                     <form onsubmit="handleSaveGovernor(event)" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="hidden" name="csrf_token" value="<?php echo Auth::csrfToken(); ?>">
+
                         <div>
                             <label style="font-size: 11px; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 6px;">PILIH GOVERNOR CPU:</label>
                             <select id="selectCpuGov" class="btn-new-device" style="width: 100%; padding: 8px 12px; font-size: 12px; font-weight: 700; cursor: pointer;">
@@ -1387,3 +1389,95 @@ $currentPage = 'settings';
     </script>
 </body>
 </html>
+
+
+<!-- Scheduled Reboot Section -->
+<div class="room-card" style="margin-top:20px;">
+    <div class="room-card-top">
+        <span class="room-card-title">Jadwal Reboot Otomatis</span>
+        <span class="room-spec-pill"><i class="bi bi-clock-history"></i></span>
+    </div>
+    <div class="room-card-body">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <select id="schedHour" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
+                <?php for($i=0;$i<24;$i++) echo "<option value='$i' ".($i===4?'selected':'').">$i</option>"; ?>
+            </select>
+            <span style="font-size:18px;">:</span>
+            <select id="schedMinute" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
+                <?php for($i=0;$i<60;$i+=5) echo "<option value='$i'>$i</option>"; ?>
+            </select>
+            <button type="button" class="btn-primary-neumorphic" onclick="setScheduledReboot()" style="padding:8px 16px;">
+                <i class="bi bi-clock"></i> <span>Set Jadwal</span>
+            </button>
+            <button type="button" class="btn-action-round" onclick="cancelScheduledReboot()" style="padding:8px 16px;">
+                <span>Batal</span>
+            </button>
+        </div>
+        <p id="schedStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
+    </div>
+</div>
+
+<script>
+async function setScheduledReboot() {
+    var h = document.getElementById('schedHour').value;
+    var m = document.getElementById('schedMinute').value;
+    var res = await fetch('api.php?action=set_scheduled_reboot', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'csrf_token=<?php echo Auth::csrfToken(); ?>&hour=' + h + '&minute=' + m
+    });
+    var data = await res.json();
+    document.getElementById('schedStatus').textContent = data.message || data.error;
+    document.getElementById('schedStatus').style.color = data.success ? 'var(--color-green)' : 'var(--color-danger)';
+}
+
+async function cancelScheduledReboot() {
+    var res = await fetch('api.php?action=cancel_scheduled_reboot');
+    var data = await res.json();
+    document.getElementById('schedStatus').textContent = data.message || '';
+}
+
+// Load current schedule
+fetch('api.php?action=get_scheduled_reboot').then(r=>r.json()).then(data=>{
+    if(data.success && data.scheduled !== 'none') {
+        document.getElementById('schedStatus').textContent = 'Current: ' + data.scheduled;
+    }
+});
+</script>
+
+
+<!-- Wake-on-LAN Section -->
+<div class="room-card" style="margin-top:20px;">
+    <div class="room-card-top">
+        <span class="room-card-title">Wake-on-LAN</span>
+        <span class="room-spec-pill"><i class="bi bi-pc-display"></i></span>
+    </div>
+    <div class="room-card-body">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="wolMac" placeholder="MAC Address (xx:xx:xx:xx:xx:xx)" 
+                   style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:200px;">
+            <button type="button" class="btn-primary-neumorphic" onclick="sendWOL()" style="padding:8px 16px;">
+                <i class="bi bi-power"></i> <span>Wake</span>
+            </button>
+        </div>
+        <p id="wolStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
+    </div>
+</div>
+
+<script>
+async function sendWOL() {
+    var mac = document.getElementById('wolMac').value.trim();
+    if (!mac) {
+        document.getElementById('wolStatus').textContent = 'Masukkan MAC address';
+        return;
+    }
+    var res = await fetch('api.php?action=wake_on_lan', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'csrf_token=<?php echo Auth::csrfToken(); ?>&mac=' + mac
+    });
+    var data = await res.json();
+    document.getElementById('wolStatus').textContent = data.message || data.error;
+    document.getElementById('wolStatus').style.color = data.success ? 'var(--color-green)' : 'var(--color-danger)';
+}
+</script>

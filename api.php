@@ -60,6 +60,20 @@ if ($arpOutput && preg_match('/lladdr\s+([0-9a-f:]{17})/i', $arpOutput, $m)) {
 // PUBLIC ACTIONS (No Admin Auth Required: Login, Logout, Captive Portal Splash)
 // =========================================================================
 if ($action === 'login') {
+    // CSRF verification
+    if (!Auth::csrfVerify($postData['csrf_token'] ?? null)) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Invalid or expired CSRF token']);
+        exit;
+    }
+
+    // Rate limiting
+    if (Auth::isRateLimited()) {
+        http_response_code(429);
+        echo json_encode(['success' => false, 'error' => 'Too many login attempts. Please wait 60 seconds.']);
+        exit;
+    }
+
     $username = trim($postData['username'] ?? '');
     $password = trim($postData['password'] ?? '');
     $remember = !empty($postData['remember']);
@@ -182,7 +196,28 @@ if ($action === 'auth_logout') {
 }
 
 // =========================================================================
+
+if ($action === 'speed_test') {
+    if (!Auth::check()) { http_response_code(401); echo json_encode(['success'=>false]); exit; }
+    $start = microtime(true);
+    $ch = curl_init('http://speedtest.tele2.net/1MB.zip');
+    curl_setopt($ch, CURLOPT_FILE, fopen('/dev/null', 'w'));
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_exec($ch);
+    $duration = microtime(true) - $start;
+    curl_close($ch);
+    $speed = round(1 / max($duration, 0.1) * 8, 2);
+    echo json_encode(['success' => true, 'download' => $speed, 'note' => 'Mbps (simple test)']);
+    exit;
+}
+
 // PROTECTED ADMIN ACTIONS: Require Login
+// CSRF verification for all POST/PUT/DELETE actions
+if ($_SERVER['REQUEST_METHOD'] !== 'GET' && !Auth::csrfVerify($postData['csrf_token'] ?? null)) {
+    http_response_code(403);
+    echo json_encode(['success' => false, 'error' => 'Invalid or expired CSRF token']);
+    exit;
+}
 // =========================================================================
 if (!Auth::check()) {
     http_response_code(401);

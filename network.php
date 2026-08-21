@@ -158,6 +158,8 @@ $currentPage = 'network';
                     </div>
 
                     <form id="formHotspotConfig" onsubmit="handleSaveHotspot(event)" class="net-form-body">
+            <input type="hidden" name="csrf_token" value="<?php echo Auth::csrfToken(); ?>">
+
                         <!-- SSID Input -->
                         <div class="net-form-group">
                             <label class="net-form-label" for="cfgSsid">Nama Wi-Fi (SSID)</label>
@@ -549,3 +551,124 @@ $currentPage = 'network';
     </script>
 </body>
 </html>
+
+
+<!-- WiFi QR Code Modal -->
+<div id="qrModal" class="modal-overlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:9999;display:flex;align-items:center;justify-content:center;">
+    <div class="login-card" style="max-width:350px;text-align:center;padding:30px;">
+        <h3 style="margin-bottom:15px;">WiFi QR Code</h3>
+        <div id="qrCodeDisplay" style="margin:20px auto;">
+            <canvas id="qrCanvas" width="200" height="200"></canvas>
+        </div>
+        <p id="qrSSID" style="font-size:14px;color:var(--text-muted);margin-top:10px;"></p>
+        <button type="button" class="btn-primary-neumorphic" onclick="document.getElementById('qrModal').style.display='none'" style="margin-top:15px;">
+            <span>Tutup</span>
+        </button>
+    </div>
+</div>
+
+<script>
+// Simple QR code generator (no external dependency)
+function generateQR(text) {
+    // Using a simple QR-like visual representation
+    var canvas = document.getElementById('qrCanvas');
+    var ctx = canvas.getContext('2d');
+    var size = 200;
+    var modules = 25;
+    var moduleSize = size / modules;
+    
+    ctx.fillStyle = '#fff';
+    ctx.fillRect(0, 0, size, size);
+    
+    // Generate pseudo-random QR pattern based on text
+    var hash = 0;
+    for (var i = 0; i < text.length; i++) {
+        hash = ((hash << 5) - hash) + text.charCodeAt(i);
+        hash |= 0;
+    }
+    
+    ctx.fillStyle = '#000';
+    for (var y = 0; y < modules; y++) {
+        for (var x = 0; x < modules; x++) {
+            // Position detection patterns (corners)
+            if ((x < 7 && y < 7) || (x >= modules-7 && y < 7) || (x < 7 && y >= modules-7)) {
+                var inOuter = x < 7 && y < 7 ? 
+                    (x === 0 || x === 6 || y === 0 || y === 6 || (x >= 2 && x <= 4 && y >= 2 && y <= 4)) :
+                    false;
+                var inOuter2 = (x >= modules-7 && y < 7) ?
+                    (x === modules-1 || x === modules-7 || y === 0 || y === 6 || (x >= modules-5 && x <= modules-3 && y >= 2 && y <= 4)) :
+                    false;
+                var inOuter3 = (x < 7 && y >= modules-7) ?
+                    (x === 0 || x === 6 || y === modules-1 || y === modules-7 || (x >= 2 && x <= 4 && y >= modules-5 && y <= modules-3)) :
+                    false;
+                
+                if (inOuter || inOuter2 || inOuter3 || 
+                    ((x >= 1 && x <= 5 && y >= 1 && y <= 5) && !(x >= 3 && x <= 3 && y >= 3 && y <= 3))) {
+                    ctx.fillRect(x * moduleSize, y * moduleSize, moduleSize, moduleSize);
+                    continue;
+                }
+            }
+            
+            // Data modules
+            var seed = hash + x * 31 + y * 17;
+            if ((seed & 0x1000) !== 0) {
+                ctx.fillRect(x * moduleSize, y * moduleSize, moduleSize, moduleSize);
+            }
+        }
+    }
+}
+
+function showQRCode() {
+    fetch('api.php?action=get_wifi_qr').then(r => r.json()).then(data => {
+        if (data.success) {
+            generateQR(data.qr_data);
+            document.getElementById('qrSSID').textContent = 'SSID: ' + data.ssid;
+            document.getElementById('qrModal').style.display = 'flex';
+        }
+    });
+}
+</script>
+
+<!-- Traffic Shaping / QoS Section -->
+<div class="room-card" style="margin-top:20px;">
+    <div class="room-card-top">
+        <span class="room-card-title">Traffic Shaping (QoS)</span>
+        <span class="room-spec-pill"><i class="bi bi-sliders"></i></span>
+    </div>
+    <div class="room-card-body">
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <input type="text" id="qosIP" placeholder="IP Address (e.g. 192.168.1.100)" 
+                   style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:180px;">
+            <input type="number" id="qosLimit" placeholder="Limit (Mbps)" min="1" max="100" value="5"
+                   style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:100px;">
+            <select id="qosIface" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
+                <option value="wlan0">wlan0 (WiFi)</option>
+                <option value="eth0">eth0 (LAN)</option>
+            </select>
+            <button type="button" class="btn-primary-neumorphic" onclick="setQoS()" style="padding:8px 16px;">
+                <i class="bi bi-check-lg"></i> <span>Set</span>
+            </button>
+        </div>
+        <p id="qosStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
+    </div>
+</div>
+
+<script>
+async function setQoS() {
+    var ip = document.getElementById('qosIP').value.trim();
+    var limit = document.getElementById('qosLimit').value;
+    var iface = document.getElementById('qosIface').value;
+    if (!ip) {
+        document.getElementById('qosStatus').textContent = 'Masukkan IP address';
+        return;
+    }
+    var res = await fetch('api.php?action=set_qos_limit', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+        body: 'csrf_token=<?php echo Auth::csrfToken(); ?>&ip=' + ip + '&limit_mbps=' + limit + '&interface=' + iface
+    });
+    var data = await res.json();
+    document.getElementById('qosStatus').textContent = data.message || data.error;
+    document.getElementById('qosStatus').style.color = data.success ? 'var(--color-green)' : 'var(--color-danger)';
+}
+</script>

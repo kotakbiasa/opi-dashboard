@@ -41,6 +41,9 @@
             <?php endif; ?>
             <div id="loginErrorMsg" class="login-error-text" style="display: none;"></div>
 
+            <!-- CSRF Token -->
+            <input type="hidden" name="csrf_token" value="<?php echo Auth::csrfToken(); ?>">
+
             <!-- Submit Button -->
             <button type="submit" class="btn-login-cyan" id="btnLoginSubmit">
                 <span>Masuk</span>

@@ -1,0 +1,30 @@
+{
+  "name": "Orange Pi Zero 2 Gateway Dashboard",
+  "short_name": "OPI Dashboard",
+  "description": "Neumorphic Web Gateway Dashboard & Captive Portal Controller for Orange Pi Zero 2",
+  "start_url": "/index.php",
+  "display": "standalone",
+  "background_color": "#e8eef6",
+  "theme_color": "#0284c7",
+  "orientation": "portrait-primary",
+  "lang": "id",
+  "dir": "ltr",
+  "categories": [
+    "utilities",
+    "productivity"
+  ],
+  "icons": [
+    {
+      "src": "assets/orange-pi-logo.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "assets/orange-pi-logo.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
