@@ -1,28 +1,27 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400&display=swap');
-@import url('https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css');
 
 /* ==========================================================================
-   1. DESIGN TOKENS (NEUMORPHIC / SOFT UI)
+   1. DESIGN TOKENS (CLAYMORPHISM / PUFFY 3D UI)
    ========================================================================== */
 :root {
-    --bg-canvas: #ebf1f8;
-    --bg-card: #ebf1f8;
-    --bg-inset: #e2eaf4;
+    --bg-canvas: #e8eef6;
+    --bg-card: #eef2f7;
+    --bg-inset: #e0e7f0;
 
     --text-heading: #0f172a;
     --text-main: #334155;
     --text-muted: #64748b;
     --text-subtle: #94a3b8;
 
-    /* Realistic Neumorphic Double-Shadow Tokens */
-    --nm-raised: 8px 8px 18px rgba(166, 185, 214, 0.58), -8px -8px 18px #ffffff;
-    --nm-raised-sm: 4px 4px 10px rgba(166, 185, 214, 0.5), -4px -4px 10px #ffffff;
-    --nm-raised-lg: 14px 14px 28px rgba(160, 180, 210, 0.62), -14px -14px 28px #ffffff;
-    --nm-pill: 9px 9px 20px rgba(166, 185, 214, 0.58), -9px -9px 20px #ffffff;
+    /* Claymorphism Shadow Tokens — puffy, rounded, soft 3D */
+    --nm-raised: 8px 8px 20px rgba(163, 177, 198, 0.5), inset 2px 2px 6px rgba(255, 255, 255, 0.7), inset -2px -2px 6px rgba(163, 177, 198, 0.35);
+    --nm-raised-sm: 4px 4px 12px rgba(163, 177, 198, 0.45), inset 1px 1px 4px rgba(255, 255, 255, 0.7), inset -1px -1px 4px rgba(163, 177, 198, 0.3);
+    --nm-raised-lg: 14px 14px 30px rgba(160, 175, 200, 0.55), inset 3px 3px 8px rgba(255, 255, 255, 0.75), inset -3px -3px 8px rgba(160, 175, 200, 0.4);
+    --nm-pill: 9px 9px 18px rgba(163, 177, 198, 0.5), inset 2px 2px 5px rgba(255, 255, 255, 0.7), inset -2px -2px 5px rgba(163, 177, 198, 0.35);
 
-    --nm-inset: inset 4px 4px 8px rgba(166, 185, 214, 0.58), inset -4px -4px 8px #ffffff;
-    --nm-inset-sm: inset 2.5px 2.5px 5px rgba(166, 185, 214, 0.52), inset -2.5px -2.5px 5px #ffffff;
-    --nm-inset-deep: inset 5px 5px 12px rgba(160, 180, 210, 0.65), inset -5px -5px 12px #ffffff;
+    --nm-inset: inset 3px 3px 8px rgba(163, 177, 198, 0.55), inset -2px -2px 6px rgba(255, 255, 255, 0.6);
+    --nm-inset-sm: inset 2px 2px 5px rgba(163, 177, 198, 0.5), inset -1px -1px 4px rgba(255, 255, 255, 0.55);
+    --nm-inset-deep: inset 4px 4px 10px rgba(160, 175, 200, 0.6), inset -3px -3px 8px rgba(255, 255, 255, 0.55);
 
     --color-primary: #0284c7;
     --color-primary-light: #38bdf8;
@@ -34,10 +33,10 @@
     --color-teal: #0d9488;
     --color-danger: #ef4444;
 
-    --radius-sm: 12px;
-    --radius-md: 18px;
-    --radius-lg: 22px;
-    --radius-xl: 30px;
+    --radius-sm: 16px;
+    --radius-md: 22px;
+    --radius-lg: 28px;
+    --radius-xl: 36px;
     --radius-pill: 9999px;
 
     --transition-fast: 0.18s cubic-bezier(0.4, 0, 0.2, 1);
@@ -99,7 +98,7 @@ input {
 }
 
 /* ==========================================================================
-   3. LOGIN SCREEN (NEUMORPHIC)
+   3. LOGIN SCREEN (CLAYMORPHISM)
    ========================================================================== */
 .login-wrapper {
     width: 100%;
@@ -455,7 +454,7 @@ input {
     margin-top: 1px;
 }
 
-/* Neumorphic Switch */
+/* Claymorphic Switch */
 .nm-switch {
     display: flex;
     align-items: center;
@@ -592,7 +591,7 @@ input {
 }
 
 .btn-new-device i.bi,
-.btn-primary-neumorphic i.bi {
+.btn-primary-claymorphic i.bi {
     font-size: 15px;
     line-height: 1;
 }
@@ -987,7 +986,7 @@ input {
 .summary-card {
     background: var(--bg-card);
     border-radius: 22px;
-    box-shadow: 6px 6px 14px rgba(182, 198, 220, 0.6), -6px -6px 14px #ffffff;
+    box-shadow: var(--nm-raised-sm);
     padding: 18px 22px;
     display: flex;
     flex-direction: column;
@@ -997,7 +996,7 @@ input {
 }
 
 .summary-card:hover {
-    box-shadow: 8px 8px 18px rgba(175, 192, 215, 0.65), -8px -8px 18px #ffffff;
+    box-shadow: var(--nm-raised);
 }
 
 .summary-header {
@@ -1084,7 +1083,7 @@ input {
     transform: translateY(-2px);
 }
 
-/* Floating Neumorphic Tooltip Popup on Hover */
+/* Floating Claymorphic Tooltip Popup on Hover */
 .bar-tooltip-popup {
     position: absolute;
     bottom: calc(100% + 8px);
@@ -1326,7 +1325,7 @@ input {
 .user-profile-card {
     background: var(--bg-card);
     border-radius: 22px;
-    box-shadow: 6px 6px 14px rgba(182, 198, 220, 0.6), -6px -6px 14px #ffffff;
+    box-shadow: var(--nm-raised-sm);
     padding: 14px 18px;
     display: flex;
     align-items: center;
@@ -1335,7 +1334,7 @@ input {
 }
 
 .user-profile-card:hover {
-    box-shadow: 8px 8px 18px rgba(175, 192, 215, 0.65), -8px -8px 18px #ffffff;
+    box-shadow: var(--nm-raised);
 }
 
 .profile-avatar-wrap {
@@ -1440,7 +1439,7 @@ input {
     50% { transform: scale(1.35); opacity: 0.7; }
 }
 
-/* Real-Time Neumorphic Digital Segment Box Clock & Date Widget */
+/* Real-Time Claymorphic Digital Segment Box Clock & Date Widget */
 .clock-segment-card {
     background: var(--bg-card);
     border-radius: var(--radius-lg);
@@ -2015,7 +2014,7 @@ input {
     letter-spacing: -0.1px;
 }
 
-/* Neumorphic Inset Input Wrapper */
+/* Claymorphic Inset Input Wrapper */
 .net-input-wrap {
     position: relative;
     display: flex;
@@ -2073,7 +2072,7 @@ input {
     color: var(--color-primary);
 }
 
-/* Custom 100% Neumorphic Dropdown Component */
+/* Custom 100% Claymorphic Dropdown Component */
 .nm-dropdown {
     position: relative;
     width: 100%;
@@ -2188,7 +2187,7 @@ input {
     color: var(--color-primary);
 }
 
-.btn-primary-neumorphic {
+.btn-primary-claymorphic {
     background: var(--bg-card);
     box-shadow: var(--nm-raised-sm);
     border: 1px solid rgba(255, 255, 255, 0.85);
@@ -2208,14 +2207,14 @@ input {
     outline: none !important;
 }
 
-.btn-primary-neumorphic:hover, .btn-primary-neumorphic:focus, .btn-primary-neumorphic:visited {
+.btn-primary-claymorphic:hover, .btn-primary-claymorphic:focus, .btn-primary-claymorphic:visited {
     box-shadow: var(--nm-raised);
     transform: translateY(-2px);
     color: var(--color-primary-dark);
     text-decoration: none !important;
 }
 
-.btn-primary-neumorphic:active {
+.btn-primary-claymorphic:active {
     box-shadow: var(--nm-inset-sm);
     transform: translateY(1px);
     text-decoration: none !important;
