@@ -5,11 +5,8 @@ require_once __DIR__ . '/includes/CaptivePortal.php';
 $settings = CaptivePortal::getSettings();
 $packages = array_values(CaptivePortal::$standardPackages);
 
-$clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '192.168.1.100';
-if (strpos($clientIp, ',') !== false) {
-    $clientIp = trim(explode(',', $clientIp)[0]);
-}
-// Validate IP address to prevent command injection
+// REMOTE_ADDR only: X-Forwarded-For is client-controlled and must never be trusted.
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '192.168.1.100';
 if (!filter_var($clientIp, FILTER_VALIDATE_IP)) {
     $clientIp = '192.168.1.100';
 }

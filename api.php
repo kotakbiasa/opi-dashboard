@@ -1,19 +1,11 @@
 <?php
 date_default_timezone_set(trim(@file_get_contents('/etc/timezone')) ?: 'Asia/Makassar');
 header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
-header('Access-Control-Allow-Headers: Content-Type');
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'");
-
-if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
-    http_response_code(200);
-    exit;
-}
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self'; img-src 'self' data:; connect-src 'self'");
 
 require_once __DIR__ . '/includes/Auth.php';
 require_once __DIR__ . '/includes/SystemMonitor.php';
@@ -37,12 +29,9 @@ if (empty($action) && isset($postData['action'])) {
     $action = $postData['action'];
 }
 
-// Client helper for IP & MAC detection
-$clientIp = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '192.168.1.100';
-if (strpos($clientIp, ',') !== false) {
-    $clientIp = trim(explode(',', $clientIp)[0]);
-}
-// Validate IP address to prevent command injection
+// Client helper for IP & MAC detection.
+// REMOTE_ADDR only: X-Forwarded-For is client-controlled and must never be trusted.
+$clientIp = $_SERVER['REMOTE_ADDR'] ?? '192.168.1.100';
 if (!filter_var($clientIp, FILTER_VALIDATE_IP)) {
     $clientIp = '192.168.1.100';
 }
@@ -166,14 +155,13 @@ if ($action === 'auth_trial') {
 }
 
 // Public Member Account Authentication (Client Splash Page)
+// Authorization always applies to the requesting client: supplied ip/mac from the body is ignored.
 if ($action === 'auth_member') {
     $username = trim($postData['username'] ?? '');
     $password = trim($postData['password'] ?? '');
     $hostname = trim($postData['hostname'] ?? 'Smartphone Member');
-    $targetIp = trim($postData['ip'] ?? $clientIp);
-    $targetMac = trim($postData['mac'] ?? $clientMac);
 
-    $res = CaptivePortal::authenticateMember($username, $password, $targetIp, $targetMac, $hostname);
+    $res = CaptivePortal::authenticateMember($username, $password, $clientIp, $clientMac, $hostname);
     if ($res['success']) {
         echo json_encode($res);
     } else {
@@ -184,10 +172,9 @@ if ($action === 'auth_member') {
 }
 
 // Public Client Self-Logout (Splash Page)
+// Clients may only terminate their own session: supplied ip/mac from the body is ignored.
 if ($action === 'auth_logout') {
-    $targetIp = trim($postData['ip'] ?? $clientIp);
-    $targetMac = trim($postData['mac'] ?? $clientMac);
-    $res = CaptivePortal::logoutSession($targetIp, $targetMac);
+    $res = CaptivePortal::logoutSession($clientIp, $clientMac);
     echo json_encode([
         'success' => true,
         'message' => 'Anda telah berhasil logout dari jaringan hotspot.'
@@ -200,12 +187,14 @@ if ($action === 'auth_logout') {
 if ($action === 'speed_test') {
     if (!Auth::check()) { http_response_code(401); echo json_encode(['success'=>false]); exit; }
     $start = microtime(true);
+    $nullStream = fopen('php://temp', 'w+b');
     $ch = curl_init('http://speedtest.tele2.net/1MB.zip');
-    curl_setopt($ch, CURLOPT_FILE, fopen('/dev/null', 'w'));
+    curl_setopt($ch, CURLOPT_FILE, $nullStream);
     curl_setopt($ch, CURLOPT_TIMEOUT, 10);
     curl_exec($ch);
-    $duration = microtime(true) - $start;
     curl_close($ch);
+    fclose($nullStream);
+    $duration = microtime(true) - $start;
     $speed = round(1 / max($duration, 0.1) * 8, 2);
     echo json_encode(['success' => true, 'download' => $speed, 'note' => 'Mbps (simple test)']);
     exit;
@@ -253,23 +242,11 @@ try {
             $led = $postData['led'] ?? 'green';
             $state = isset($postData['status']) ? (bool)$postData['status'] : true;
             $ok = SystemMonitor::setLed($led, $state);
-            $freshState = SystemMonitor::getFullState();
+            $freshState = SystemMonitor::getFullState(true);
             echo json_encode([
                 'success' => $ok,
                 'message' => ucfirst($led) . " LED set to " . ($state ? 'ON' : 'OFF'),
                 'leds' => $freshState['leds'],
-                'data' => $freshState
-            ]);
-            break;
-
-        case 'set_cpu_governor':
-            $gov = $postData['governor'] ?? 'ondemand';
-            $ok = SystemMonitor::setCpuGovernor($gov);
-            $freshState = SystemMonitor::getFullState();
-            echo json_encode([
-                'success' => $ok,
-                'message' => "CPU Governor changed to {$gov}",
-                'cpu' => $freshState['cpu'],
                 'data' => $freshState
             ]);
             break;
@@ -281,7 +258,7 @@ try {
                 throw new Exception("Service not allowed for restart");
             }
             @shell_exec("systemctl restart {$svc} 2>/dev/null");
-            $freshState = SystemMonitor::getFullState();
+            $freshState = SystemMonitor::getFullState(true);
             echo json_encode([
                 'success' => true,
                 'message' => "Service {$svc} restarted successfully",
@@ -349,7 +326,7 @@ try {
                 ]
             ];
             @file_get_contents('http://127.0.0.1:3000/control/protection', false, stream_context_create($opts));
-            $freshState = SystemMonitor::getFullState();
+            $freshState = SystemMonitor::getFullState(true);
             echo json_encode([
                 'success' => true,
                 'message' => "Proteksi AdGuard Home " . ($enabled ? "diaktifkan" : "dijeda sementara"),
@@ -703,15 +680,10 @@ try {
 
         case 'change_admin_password':
             $pass = trim($postData['new_password'] ?? '');
-            if (strlen($pass) < 4) throw new Exception("Kata sandi baru minimal 4 karakter.");
+            if (strlen($pass) < 8) throw new Exception("Kata sandi baru minimal 8 karakter.");
             $ok = Auth::changePassword($pass);
             if (!$ok) throw new Exception("Gagal menyimpan kata sandi baru.");
             echo json_encode(['success' => true, 'message' => 'Kata sandi admin berhasil diperbarui!']);
-            break;
-
-        case 'reboot_system':
-            $res = SettingsManager::rebootSystem();
-            echo json_encode($res);
             break;
 
         case 'shutdown_system':

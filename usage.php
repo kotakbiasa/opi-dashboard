@@ -14,6 +14,121 @@ $devices = $state['device_usage'] ?? [];
 $overall = $state['overall_usage'] ?? [];
 $modem = $state['modem'] ?? [];
 $currentPage = 'usage';
+
+// Build REAL chart datasets from the persistent traffic history (data/traffic_history.json)
+function opiBuildUsageCharts(array $history): array {
+    $labelsHour = ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'];
+    $today = date('Y-m-d');
+
+    // Daily: today's real 3-hour buckets
+    $dlH = array_fill(0, 8, 0.0);
+    $ulH = array_fill(0, 8, 0.0);
+    foreach (($history[$today]['hours'] ?? []) as $key => $v) {
+        $idx = (int)substr((string)$key, 1);
+        if ($idx >= 0 && $idx < 8 && is_array($v)) {
+            $dlH[$idx] = round((float)($v['dl_mb'] ?? 0), 1);
+            $ulH[$idx] = round((float)($v['ul_mb'] ?? 0), 1);
+        }
+    }
+
+    // Weekly: last 7 days per day
+    $dayLabels = [];
+    $dlD = [];
+    $ulD = [];
+    for ($i = 6; $i >= 0; $i--) {
+        $ts = strtotime("-{$i} days");
+        $dayLabels[] = date('D', $ts);
+        $day = date('Y-m-d', $ts);
+        $dlD[] = round(((float)($history[$day]['dl_mb'] ?? 0)) / 1024, 2);
+        $ulD[] = round(((float)($history[$day]['ul_mb'] ?? 0)) / 1024, 2);
+    }
+
+    // Monthly: current month grouped into calendar week buckets
+    $firstDay = (int)date('j');
+    $numBuckets = (int)ceil($firstDay / 7);
+    $dlW = array_fill(0, $numBuckets, 0.0);
+    $ulW = array_fill(0, $numBuckets, 0.0);
+    $monthPrefix = date('Y-m');
+    foreach ($history as $day => $v) {
+        if (strpos((string)$day, $monthPrefix) !== 0 || !is_array($v)) continue;
+        $d = (int)substr((string)$day, 8, 2);
+        $b = min($numBuckets - 1, intdiv($d - 1, 7));
+        $dlW[$b] += (float)($v['dl_mb'] ?? 0);
+        $ulW[$b] += (float)($v['ul_mb'] ?? 0);
+    }
+    $dlW = array_map(fn($x) => round($x / 1024, 2), $dlW);
+    $ulW = array_map(fn($x) => round($x / 1024, 2), $ulW);
+
+    // Lifetime: monthly totals for the last 6 months
+    $mLabels = [];
+    $dlM = [];
+    $ulM = [];
+    for ($i = 5; $i >= 0; $i--) {
+        $ts = strtotime("-{$i} months");
+        $mLabels[] = date('M', $ts);
+        $prefix = date('Y-m', $ts);
+        $sumDl = 0.0;
+        $sumUl = 0.0;
+        foreach ($history as $day => $v) {
+            if (strpos((string)$day, $prefix) !== 0 || !is_array($v)) continue;
+            $sumDl += (float)($v['dl_mb'] ?? 0);
+            $sumUl += (float)($v['ul_mb'] ?? 0);
+        }
+        $dlM[] = round($sumDl / 1024, 1);
+        $ulM[] = round($sumUl / 1024, 1);
+    }
+
+    $fmtKbps = fn(float $kbps) => $kbps >= 1024 ? round($kbps / 1024, 2) . ' MB/s' : round($kbps, 1) . ' KB/s';
+    $liveRx = (float)($GLOBALS['overall']['live_rx_kbps'] ?? 0);
+    $liveTx = (float)($GLOBALS['overall']['live_tx_kbps'] ?? 0);
+
+    return [
+        'daily' => [
+            'title' => 'Distribusi Trafik Harian (Per 3 Jam)',
+            'subtitle' => 'Akumulasi nyata hari ini (' . date('d M Y') . ')',
+            'labels' => $labelsHour,
+            'dl' => $dlH,
+            'ul' => $ulH,
+            'max' => round(max(800.0, max($dlH) * 1.15), 1),
+            'avgDl' => $fmtKbps($liveRx),
+            'avgUl' => $fmtKbps($liveTx)
+        ],
+        'weekly' => [
+            'title' => 'Distribusi Trafik Mingguan (7 Hari Terakhir)',
+            'subtitle' => 'Volume data nyata per hari',
+            'labels' => $dayLabels,
+            'dl' => $dlD,
+            'ul' => $ulD,
+            'max' => round(max(4.0, max(max($dlD), max($ulD)) * 1.15), 2),
+            'avgDl' => $fmtKbps($liveRx),
+            'avgUl' => $fmtKbps($liveTx)
+        ],
+        'monthly' => [
+            'title' => 'Distribusi Trafik Bulanan (Per Pekan)',
+            'subtitle' => 'Akumulasi nyata bulan berjalan (' . date('F Y') . ')',
+            'labels' => array_map(fn($i) => 'Pekan ' . ($i + 1), range(0, $numBuckets - 1)),
+            'dl' => $dlW,
+            'ul' => $ulW,
+            'max' => round(max(15.0, max(max($dlW), max($ulW)) * 1.15), 2),
+            'avgDl' => $fmtKbps($liveRx),
+            'avgUl' => $fmtKbps($liveTx)
+        ],
+        'lifetime' => [
+            'title' => 'Tren Trafik 6 Bulan Terakhir',
+            'subtitle' => 'Akumulasi nyata data bulanan',
+            'labels' => $mLabels,
+            'dl' => $dlM,
+            'ul' => $ulM,
+            'max' => round(max(200.0, max(max($dlM), max($ulM)) * 1.15), 1),
+            'avgDl' => $fmtKbps($liveRx),
+            'avgUl' => $fmtKbps($liveTx)
+        ]
+    ];
+}
+
+$trafficHistoryRaw = @file_get_contents(__DIR__ . '/data/traffic_history.json');
+$trafficHistory = is_string($trafficHistoryRaw) ? (json_decode($trafficHistoryRaw, true) ?: []) : [];
+$usageChartsReal = opiBuildUsageCharts($trafficHistory);
 ?>
 <!DOCTYPE html>
 <html lang="id">
@@ -99,7 +214,7 @@ $currentPage = 'usage';
                         <div class="usage-stat-kpi">
                             <span style="font-size: 11.5px; font-weight: 700; color: var(--text-muted); display: block; text-transform: uppercase;">Total Konsumsi Data</span>
                             <div style="display: flex; align-items: baseline; margin-top: 2px;">
-                                <span class="usage-kpi-val" id="heroTotalVal"><?= $overall['daily_total_gb'] ?? '3.30' ?></span>
+                                <span class="usage-kpi-val" id="heroTotalVal"><?= $overall['daily_total_gb'] ?? '0' ?></span>
                                 <span class="usage-kpi-unit" id="heroTotalUnit">GB</span>
                             </div>
                         </div>
@@ -111,7 +226,7 @@ $currentPage = 'usage';
                                     <span class="pulse-green-dot"></span>
                                     <span style="font-size: 10.5px; font-weight: 800; color: #059669;">UNDUH</span>
                                 </div>
-                                <strong id="heroDlVal" style="font-size: 15px; font-weight: 800; color: var(--text-heading); font-family: monospace;"><?= $overall['daily_dl_gb'] ?? '2.85' ?> GB</strong>
+                                <strong id="heroDlVal" style="font-size: 15px; font-weight: 800; color: var(--text-heading); font-family: monospace;"><?= $overall['daily_dl_gb'] ?? '0' ?> GB</strong>
                                 <span id="heroDlPct" style="font-size: 10px; color: var(--text-muted); display: block;">86.4% dari total</span>
                             </div>
 
@@ -120,7 +235,7 @@ $currentPage = 'usage';
                                     <span style="display:inline-block; width:6px; height:6px; border-radius:50%; background:#0284c7;"></span>
                                     <span style="font-size: 10.5px; font-weight: 800; color: #0284c7;">UNGGAH</span>
                                 </div>
-                                <strong id="heroUlVal" style="font-size: 15px; font-weight: 800; color: var(--text-heading); font-family: monospace;"><?= $overall['daily_ul_gb'] ?? '0.45' ?> GB</strong>
+                                <strong id="heroUlVal" style="font-size: 15px; font-weight: 800; color: var(--text-heading); font-family: monospace;"><?= $overall['daily_ul_gb'] ?? '0' ?> GB</strong>
                                 <span id="heroUlPct" style="font-size: 10px; color: var(--text-muted); display: block;">13.6% dari total</span>
                             </div>
                         </div>
@@ -177,7 +292,7 @@ $currentPage = 'usage';
                             <i class="bi bi-arrow-down-circle-fill"></i>
                         </div>
                         <div class="room-stat">
-                            <span class="room-stat-val" id="kpiDlVal" style="font-size: 18px; color: #059669;"><?= $overall['daily_dl_gb'] ?? '2.85' ?> <span class="stat-unit-inline">GB</span></span>
+                            <span class="room-stat-val" id="kpiDlVal" style="font-size: 18px; color: #059669;"><?= $overall['daily_dl_gb'] ?? '0' ?> <span class="stat-unit-inline">GB</span></span>
                             <span class="room-stat-unit">Terserap oleh Klien</span>
                         </div>
                     </div>
@@ -194,7 +309,7 @@ $currentPage = 'usage';
                             <i class="bi bi-arrow-up-circle-fill"></i>
                         </div>
                         <div class="room-stat">
-                            <span class="room-stat-val" id="kpiUlVal" style="font-size: 18px; color: #0284c7;"><?= $overall['daily_ul_gb'] ?? '0.45' ?> <span class="stat-unit-inline">GB</span></span>
+                            <span class="room-stat-val" id="kpiUlVal" style="font-size: 18px; color: #0284c7;"><?= $overall['daily_ul_gb'] ?? '0' ?> <span class="stat-unit-inline">GB</span></span>
                             <span class="room-stat-unit">Terkirim ke Internet</span>
                         </div>
                     </div>
@@ -221,15 +336,15 @@ $currentPage = 'usage';
                 <div class="room-card">
                     <div class="room-card-top">
                         <span class="room-card-title">Pengguna Terbesar</span>
-                        <span class="room-spec-pill" id="kpiTopShare"><?= $overall['top_device']['usage_pct'] ?? '46.3' ?>%</span>
+                        <span class="room-spec-pill" id="kpiTopShare"><?= $overall['top_device']['usage_pct'] ?? '0' ?>%</span>
                     </div>
                     <div class="room-card-body">
                         <div class="room-icon-badge" style="color: #ec4899;">
                             <i class="bi bi-award-fill"></i>
                         </div>
                         <div class="room-stat">
-                            <span class="room-stat-val" id="kpiTopName" style="font-size: 15px; font-weight: 800;"><?= htmlspecialchars($overall['top_device']['name'] ?? 'Redmi-Note-14') ?></span>
-                            <span class="room-stat-unit" id="kpiTopTotal"><?= $overall['top_device']['total_formatted'] ?? '759.4 MB' ?></span>
+                            <span class="room-stat-val" id="kpiTopName" style="font-size: 15px; font-weight: 800;"><?= htmlspecialchars($overall['top_device']['name'] ?? '-') ?></span>
+                            <span class="room-stat-unit" id="kpiTopTotal"><?= $overall['top_device']['total_formatted'] ?? '-' ?></span>
                         </div>
                     </div>
                 </div>
@@ -322,6 +437,22 @@ $currentPage = 'usage';
                     </table>
                 </div>
             </div>
+
+            <!-- Bandwidth per IP Section -->
+            <div class="room-card" style="margin-top:20px;">
+                <div class="room-card-top">
+                    <span class="room-card-title">Bandwidth per IP</span>
+                    <span class="room-spec-pill"><i class="bi bi-bar-chart-fill"></i></span>
+                </div>
+                <div class="room-card-body">
+                    <button type="button" class="btn-primary-neumorphic" onclick="loadBandwidthPerIP()" style="padding:8px 16px;margin-bottom:10px;">
+                        <i class="bi bi-arrow-clockwise"></i> <span>Refresh</span>
+                    </button>
+                    <div id="bwPerIP" style="max-height:300px;overflow-y:auto;">
+                        <p style="color:var(--text-muted);font-size:12px;">Klik Refresh untuk melihat data</p>
+                    </div>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -334,57 +465,13 @@ $currentPage = 'usage';
         let latestOverall = <?= json_encode($overall) ?>;
         let latestDevices = <?= json_encode($devices) ?>;
 
-        // Chart Data Definitions for Each Period
-        const chartDataSets = {
-            daily: {
-                title: 'Distribusi Trafik Harian (Per 3 Jam)',
-                subtitle: 'Volume data unduh & unggah hari ini (00:00 - 24:00)',
-                labels: ['00:00', '03:00', '06:00', '09:00', '12:00', '15:00', '18:00', '21:00'],
-                dl: [120, 60, 95, 340, 580, 420, 690, 540], // in MB
-                ul: [18, 10, 15, 45, 80, 62, 110, 85],
-                max: 800,
-                avgDl: '356 KB/s',
-                avgUl: '56 KB/s',
-                peak: '3.4 MB/s',
-                peakHour: '20:00 WITA'
-            },
-            weekly: {
-                title: 'Distribusi Trafik Mingguan (7 Hari Terakhir)',
-                subtitle: 'Volume data per hari (Senin - Minggu)',
-                labels: ['Sen', 'Sel', 'Rab', 'Kam', 'Jum', 'Sab', 'Min'],
-                dl: [1.8, 2.1, 1.6, 2.4, 2.8, 3.4, 2.9], // in GB
-                ul: [0.28, 0.32, 0.25, 0.38, 0.44, 0.52, 0.41],
-                max: 4.0,
-                avgDl: '410 KB/s',
-                avgUl: '68 KB/s',
-                peak: '5.2 MB/s',
-                peakHour: 'Sabtu Malam'
-            },
-            monthly: {
-                title: 'Distribusi Trafik Bulanan (4 Minggu)',
-                subtitle: 'Volume data per minggu dalam bulan berjalan',
-                labels: ['Minggu 1', 'Minggu 2', 'Minggu 3', 'Minggu 4'],
-                dl: [9.8, 11.2, 12.6, 7.6], // in GB
-                ul: [1.6, 1.9, 2.1, 1.2],
-                max: 15.0,
-                avgDl: '425 KB/s',
-                avgUl: '72 KB/s',
-                peak: '6.8 MB/s',
-                peakHour: 'Minggu ke-3'
-            },
-            lifetime: {
-                title: 'Distribusi Trafik Semua Waktu (6 Bulan)',
-                subtitle: 'Akumulasi data bulanan modem Huawei HiLink',
-                labels: ['Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu'],
-                dl: [142.5, 158.0, 164.2, 171.8, 185.4, 118.5], // in GB
-                ul: [9.8, 10.5, 11.2, 12.0, 12.8, 7.7],
-                max: 200.0,
-                avgDl: '450 KB/s',
-                avgUl: '75 KB/s',
-                peak: '8.4 MB/s',
-                peakHour: 'Juli 2026'
-            }
-        };
+        // Chart Data Definitions for Each Period (REAL accumulated history)
+        const chartDataSets = <?= json_encode($usageChartsReal, JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT) ?>;
+        // Keep legacy keys used by renderHistogram() tooltips
+        chartDataSets.daily.peak = chartDataSets.daily.avgDl;
+        chartDataSets.weekly.peak = chartDataSets.weekly.avgDl;
+        chartDataSets.monthly.peak = chartDataSets.monthly.avgDl;
+        chartDataSets.lifetime.peak = chartDataSets.lifetime.avgDl;
 
         // Render the Histogram Chart
         function renderHistogram(periodKey) {
@@ -442,37 +529,37 @@ $currentPage = 'usage';
             const kpiUl = document.getElementById('kpiUlVal');
 
             const ds = chartDataSets[periodKey] || chartDataSets.daily;
-            if (heroPeak) heroPeak.textContent = ds.peak;
-            if (heroPeakHour) heroPeakHour.textContent = ds.peakHour;
+            if (heroPeak) heroPeak.textContent = ds.avgDl;
+            if (heroPeakHour) heroPeakHour.textContent = ds.subtitle;
 
             if (periodKey === 'daily') {
                 if (heroTag) heroTag.textContent = 'HARI INI (24 JAM)';
-                if (heroTotal) heroTotal.textContent = latestOverall.daily_total_gb || '3.30';
-                if (heroDl) heroDl.textContent = `${latestOverall.daily_dl_gb || '2.85'} GB`;
-                if (heroUl) heroUl.textContent = `${latestOverall.daily_ul_gb || '0.45'} GB`;
-                if (kpiDl) kpiDl.innerHTML = `${latestOverall.daily_dl_gb || '2.85'} <span class="stat-unit-inline">GB</span>`;
-                if (kpiUl) kpiUl.innerHTML = `${latestOverall.daily_ul_gb || '0.45'} <span class="stat-unit-inline">GB</span>`;
+                if (heroTotal) heroTotal.textContent = latestOverall.daily_total_gb || '0';
+                if (heroDl) heroDl.textContent = `${latestOverall.daily_dl_gb ?? '0'} GB`;
+                if (heroUl) heroUl.textContent = `${latestOverall.daily_ul_gb ?? '0'} GB`;
+                if (kpiDl) kpiDl.innerHTML = `${latestOverall.daily_dl_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
+                if (kpiUl) kpiUl.innerHTML = `${latestOverall.daily_ul_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
             } else if (periodKey === 'weekly') {
                 if (heroTag) heroTag.textContent = 'MINGGU INI (7 HARI)';
-                if (heroTotal) heroTotal.textContent = latestOverall.weekly_total_gb || '15.80';
-                if (heroDl) heroDl.textContent = `${latestOverall.weekly_dl_gb || '13.60'} GB`;
-                if (heroUl) heroUl.textContent = `${latestOverall.weekly_ul_gb || '2.20'} GB`;
-                if (kpiDl) kpiDl.innerHTML = `${latestOverall.weekly_dl_gb || '13.60'} <span class="stat-unit-inline">GB</span>`;
-                if (kpiUl) kpiUl.innerHTML = `${latestOverall.weekly_ul_gb || '2.20'} <span class="stat-unit-inline">GB</span>`;
+                if (heroTotal) heroTotal.textContent = latestOverall.weekly_total_gb || '0';
+                if (heroDl) heroDl.textContent = `${latestOverall.weekly_dl_gb ?? '0'} GB`;
+                if (heroUl) heroUl.textContent = `${latestOverall.weekly_ul_gb ?? '0'} GB`;
+                if (kpiDl) kpiDl.innerHTML = `${latestOverall.weekly_dl_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
+                if (kpiUl) kpiUl.innerHTML = `${latestOverall.weekly_ul_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
             } else if (periodKey === 'monthly') {
                 if (heroTag) heroTag.textContent = 'BULAN INI (30 HARI)';
-                if (heroTotal) heroTotal.textContent = latestOverall.monthly_total_gb || '48.50';
-                if (heroDl) heroDl.textContent = `${latestOverall.monthly_dl_gb || '41.20'} GB`;
-                if (heroUl) heroUl.textContent = `${latestOverall.monthly_ul_gb || '7.30'} GB`;
-                if (kpiDl) kpiDl.innerHTML = `${latestOverall.monthly_dl_gb || '41.20'} <span class="stat-unit-inline">GB</span>`;
-                if (kpiUl) kpiUl.innerHTML = `${latestOverall.monthly_ul_gb || '7.30'} <span class="stat-unit-inline">GB</span>`;
+                if (heroTotal) heroTotal.textContent = latestOverall.monthly_total_gb || '0';
+                if (heroDl) heroDl.textContent = `${latestOverall.monthly_dl_gb ?? '0'} GB`;
+                if (heroUl) heroUl.textContent = `${latestOverall.monthly_ul_gb ?? '0'} GB`;
+                if (kpiDl) kpiDl.innerHTML = `${latestOverall.monthly_dl_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
+                if (kpiUl) kpiUl.innerHTML = `${latestOverall.monthly_ul_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
             } else if (periodKey === 'lifetime') {
                 if (heroTag) heroTag.textContent = 'TOTAL SEMUA WAKTU';
-                if (heroTotal) heroTotal.textContent = latestOverall.lifetime_total_gb || '1004.4';
-                if (heroDl) heroDl.textContent = `${latestOverall.lifetime_dl_gb || '940.4'} GB`;
-                if (heroUl) heroUl.textContent = `${latestOverall.lifetime_ul_gb || '64.0'} GB`;
-                if (kpiDl) kpiDl.innerHTML = `${latestOverall.lifetime_dl_gb || '940.4'} <span class="stat-unit-inline">GB</span>`;
-                if (kpiUl) kpiUl.innerHTML = `${latestOverall.lifetime_ul_gb || '64.0'} <span class="stat-unit-inline">GB</span>`;
+                if (heroTotal) heroTotal.textContent = latestOverall.lifetime_total_gb || '0';
+                if (heroDl) heroDl.textContent = `${latestOverall.lifetime_dl_gb ?? '0'} GB`;
+                if (heroUl) heroUl.textContent = `${latestOverall.lifetime_ul_gb ?? '0'} GB`;
+                if (kpiDl) kpiDl.innerHTML = `${latestOverall.lifetime_dl_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
+                if (kpiUl) kpiUl.innerHTML = `${latestOverall.lifetime_ul_gb ?? '0'} <span class="stat-unit-inline">GB</span>`;
             }
 
             renderHistogram(periodKey);
@@ -561,6 +648,7 @@ $currentPage = 'usage';
             // Update Devices Table Body
             const tbody = document.getElementById('deviceUsageTableBody');
             if (tbody && devices.length > 0) {
+                const esc = v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m]));
                 let rowsHtml = '';
                 devices.forEach((d, idx) => {
                     const rankClass = (idx === 0) ? 'rank-gold' : ((idx === 1) ? 'rank-silver' : ((idx === 2) ? 'rank-bronze' : 'rank-normal'));
@@ -569,47 +657,47 @@ $currentPage = 'usage';
                     rowsHtml += `
                         <tr class="client-row">
                             <td>
-                                <span class="rank-badge ${rankClass}">${rankLabel}</span>
+                                <span class="rank-badge ${esc(rankClass)}">${rankLabel}</span>
                             </td>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 10px;">
-                                    <div class="member-avatar-wrap" style="width: 34px; height: 34px; color: ${d.color};">
-                                        <i class="bi ${d.icon}" style="font-size: 15px;"></i>
+                                    <div class="member-avatar-wrap" style="width: 34px; height: 34px; color: ${esc(d.color)};">
+                                        <i class="bi ${esc(d.icon)}" style="font-size: 15px;"></i>
                                     </div>
                                     <div>
-                                        <strong style="color: var(--text-heading); font-size: 12.5px; display: block;">${d.name}</strong>
-                                        <span style="font-size: 10.5px; color: var(--text-muted);">${d.type}</span>
+                                        <strong style="color: var(--text-heading); font-size: 12.5px; display: block;">${esc(d.name)}</strong>
+                                        <span style="font-size: 10.5px; color: var(--text-muted);">${esc(d.type)}</span>
                                     </div>
                                 </div>
                             </td>
                             <td>
-                                <code class="net-code-tag">${d.ip}</code>
-                                <span class="member-mac-tag" style="display: block; margin-top: 3px; font-size: 10.5px;">${d.mac}</span>
+                                <code class="net-code-tag">${esc(d.ip)}</code>
+                                <span class="member-mac-tag" style="display: block; margin-top: 3px; font-size: 10.5px;">${esc(d.mac)}</span>
                             </td>
                             <td>
-                                <span style="font-size: 11.5px; font-weight: 700; color: #059669; display: block;">&darr; ${d.rx_kbps} KB/s</span>
-                                <span style="font-size: 11px; font-weight: 600; color: #0284c7;">&uarr; ${d.tx_kbps} KB/s</span>
+                                <span style="font-size: 11.5px; font-weight: 700; color: #059669; display: block;">&darr; ${esc(d.rx_kbps)} KB/s</span>
+                                <span style="font-size: 11px; font-weight: 600; color: #0284c7;">&uarr; ${esc(d.tx_kbps)} KB/s</span>
                             </td>
                             <td>
-                                <strong style="color: #059669; font-size: 12.5px;">${d.download_formatted}</strong>
+                                <strong style="color: #059669; font-size: 12.5px;">${esc(d.download_formatted)}</strong>
                             </td>
                             <td>
-                                <strong style="color: #0284c7; font-size: 12.5px;">${d.upload_formatted}</strong>
+                                <strong style="color: #0284c7; font-size: 12.5px;">${esc(d.upload_formatted)}</strong>
                             </td>
                             <td>
-                                <strong style="color: var(--text-heading); font-size: 13px;">${d.total_formatted}</strong>
+                                <strong style="color: var(--text-heading); font-size: 13px;">${esc(d.total_formatted)}</strong>
                             </td>
                             <td>
                                 <div style="display: flex; align-items: center; gap: 8px;">
-                                    <span class="room-spec-pill" style="font-weight: 800; font-size: 10.5px;">${d.usage_pct}%</span>
+                                    <span class="room-spec-pill" style="font-weight: 800; font-size: 10.5px;">${esc(d.usage_pct)}%</span>
                                     <div style="width: 50px; height: 6px; border-radius: 3px; background: rgba(182, 198, 220, 0.4); overflow: hidden;">
-                                        <div style="width: ${Math.min(100, d.usage_pct)}%; height: 100%; border-radius: 3px; background: ${d.color};"></div>
+                                        <div style="width: ${Math.min(100, d.usage_pct)}%; height: 100%; border-radius: 3px; background: ${esc(d.color)};"></div>
                                     </div>
                                 </div>
                             </td>
                             <td style="text-align: right; color: var(--text-muted); font-size: 11.5px; font-weight: 600;">
                                 <span class="pulse-green-dot" style="display: inline-block; margin-right: 4px;"></span>
-                                ${d.online_time}
+                                ${esc(d.online_time)}
                             </td>
                         </tr>
                     `;
@@ -626,22 +714,6 @@ $currentPage = 'usage';
     </script>
 </body>
 </html>
-
-<!-- Bandwidth per IP Section -->
-<div class="room-card" style="margin-top:20px;">
-    <div class="room-card-top">
-        <span class="room-card-title">Bandwidth per IP</span>
-        <span class="room-spec-pill"><i class="bi bi-bar-chart-fill"></i></span>
-    </div>
-    <div class="room-card-body">
-        <button type="button" class="btn-primary-neumorphic" onclick="loadBandwidthPerIP()" style="padding:8px 16px;margin-bottom:10px;">
-            <i class="bi bi-arrow-clockwise"></i> <span>Refresh</span>
-        </button>
-        <div id="bwPerIP" style="max-height:300px;overflow-y:auto;">
-            <p style="color:var(--text-muted);font-size:12px;">Klik Refresh untuk melihat data</p>
-        </div>
-    </div>
-</div>
 
 <script>
 async function loadBandwidthPerIP() {

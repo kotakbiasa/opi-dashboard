@@ -44,16 +44,35 @@ A lightweight, modern, and tactile web dashboard & captive portal controller des
 2. **Set permissions**:
    ```bash
    chmod -R 755 /var/www/opi-dashboard
-   chmod -R 777 /var/www/opi-dashboard/data
+   chown -R www-data:www-data /var/www/opi-dashboard/data
+   chmod -R 770 /var/www/opi-dashboard/data
    ```
-3. **Run built-in server or Lighttpd / Nginx**:
+3. **Block web access to `/data`** (contains credential hashes, vouchers & member data):
+   - **Apache**: `data/.htaccess` sudah disertakan (deny all). Pastikan `AllowOverride All` aktif.
+   - **Nginx**:
+     ```nginx
+     location ^~ /data/ { deny all; return 403; }
+     ```
+   - **Lighttpd**:
+     ```lighttpd
+     $HTTP["url"] =~ "^/data/" { url.access-deny = ("") }
+     ```
+   - **PHP built-in server**: gunakan router agar folder `data/` tidak tersaji:
+     ```bash
+     php -S 0.0.0.0:8000 -t /var/www/opi-dashboard router.php
+     ```
+4. **Run built-in server or Lighttpd / Nginx**:
    ```bash
    php -S 0.0.0.0:8000 -t /var/www/opi-dashboard
    ```
 
 ## 🔒 Security
-- Default username: `admin`
-- Default password: `admin` *(please change immediately via Settings page)*
+- First run auto-creates default credentials: username `admin`, password `admin` — **ganti segera lewat halaman Settings** (minimal 8 karakter).
+- Remember-me token (`opi_token`) hanya disimpan sebagai hash di `data/auth.json`; cookie tanpa kecocokan hash akan ditolak otomatis.
+- Rate limit login: maksimal 5 percobaan per IP, terkunci 60 detik (disimpan server-side di `data/login_attempts.json`).
+- CSRF token wajib pada semua aksi POST/DELETE API.
+- File Manager dibatasi whitelist direktori: `/root/opi-dashboard`, `/root`, `/etc`, `/var/log`, `/tmp`.
+- Jangan pernah ekspos dashboard ini langsung ke internet; akses hanya dari jaringan lokal atau via VPN (mis. Tailscale).
 
 ---
 Built with ❤️ for **Orange Pi Zero 2 Gateway (OcanAP)**.

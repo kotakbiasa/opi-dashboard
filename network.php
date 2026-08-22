@@ -378,6 +378,30 @@ $currentPage = 'network';
                     </table>
                 </div>
             </div>
+
+            <!-- Traffic Shaping / QoS Section -->
+            <div class="room-card" style="margin-top:20px;">
+                <div class="room-card-top">
+                    <span class="room-card-title">Traffic Shaping (QoS)</span>
+                    <span class="room-spec-pill"><i class="bi bi-sliders"></i></span>
+                </div>
+                <div class="room-card-body">
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <input type="text" id="qosIP" placeholder="IP Address (e.g. 192.168.1.100)"
+                               style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:180px;">
+                        <input type="number" id="qosLimit" placeholder="Limit (Mbps)" min="1" max="100" value="5"
+                               style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:100px;">
+                        <select id="qosIface" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
+                            <option value="wlan0">wlan0 (WiFi)</option>
+                            <option value="eth0">eth0 (LAN)</option>
+                        </select>
+                        <button type="button" class="btn-primary-neumorphic" onclick="setQoS()" style="padding:8px 16px;">
+                            <i class="bi bi-check-lg"></i> <span>Set</span>
+                        </button>
+                    </div>
+                    <p id="qosStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
+                </div>
+            </div>
         </main>
     </div>
 
@@ -629,29 +653,6 @@ function showQRCode() {
 }
 </script>
 
-<!-- Traffic Shaping / QoS Section -->
-<div class="room-card" style="margin-top:20px;">
-    <div class="room-card-top">
-        <span class="room-card-title">Traffic Shaping (QoS)</span>
-        <span class="room-spec-pill"><i class="bi bi-sliders"></i></span>
-    </div>
-    <div class="room-card-body">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <input type="text" id="qosIP" placeholder="IP Address (e.g. 192.168.1.100)" 
-                   style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:180px;">
-            <input type="number" id="qosLimit" placeholder="Limit (Mbps)" min="1" max="100" value="5"
-                   style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:100px;">
-            <select id="qosIface" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
-                <option value="wlan0">wlan0 (WiFi)</option>
-                <option value="eth0">eth0 (LAN)</option>
-            </select>
-            <button type="button" class="btn-primary-neumorphic" onclick="setQoS()" style="padding:8px 16px;">
-                <i class="bi bi-check-lg"></i> <span>Set</span>
-            </button>
-        </div>
-        <p id="qosStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
-    </div>
-</div>
 
 <script>
 async function setQoS() {

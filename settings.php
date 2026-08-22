@@ -699,7 +699,7 @@ $currentPage = 'settings';
                         <!-- Green LED (Power) -->
                         <div class="settings-item-row">
                             <div class="settings-label-group">
-                                <strong>🟢 LED Hijau (Power)</strong>
+                                <strong>ðŸŸ¢ LED Hijau (Power)</strong>
                                 <span>Lampu indikator daya utama</span>
                             </div>
                             <select id="selectLedGreen" class="btn-new-device" onchange="handleSaveLed('green', this.value)" style="padding: 6px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer;">
@@ -714,7 +714,7 @@ $currentPage = 'settings';
                         <!-- Red LED (Status) -->
                         <div class="settings-item-row">
                             <div class="settings-label-group">
-                                <strong>🔴 LED Merah (Status)</strong>
+                                <strong>ðŸ”´ LED Merah (Status)</strong>
                                 <span>Lampu indikator status sistem</span>
                             </div>
                             <select id="selectLedRed" class="btn-new-device" onchange="handleSaveLed('red', this.value)" style="padding: 6px 10px; font-size: 11.5px; font-weight: 700; cursor: pointer;">
@@ -877,7 +877,7 @@ $currentPage = 'settings';
                     <div style="display: flex; flex-direction: column; gap: 12px;">
                         <label class="settings-item-row" style="cursor: pointer; margin: 0;">
                             <div class="settings-label-group">
-                                <strong>🎟️ Notifikasi Penggunaan Voucher</strong>
+                                <strong>ðŸŽŸï¸ Notifikasi Penggunaan Voucher</strong>
                                 <span>Kirim pesan saat ada voucher yang baru diaktivasi oleh klien</span>
                             </div>
                             <input type="checkbox" id="checkTgVoucher" <?= !empty($telegram['notify_voucher']) ? 'checked' : '' ?> style="width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer;">
@@ -885,7 +885,7 @@ $currentPage = 'settings';
 
                         <label class="settings-item-row" style="cursor: pointer; margin: 0;">
                             <div class="settings-label-group">
-                                <strong>👥 Notifikasi Klien Tamu Baru</strong>
+                                <strong>ðŸ‘¥ Notifikasi Klien Tamu Baru</strong>
                                 <span>Kirim pesan saat perangkat baru terhubung ke Hotspot Wi-Fi</span>
                             </div>
                             <input type="checkbox" id="checkTgGuest" <?= !empty($telegram['notify_guest']) ? 'checked' : '' ?> style="width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer;">
@@ -893,7 +893,7 @@ $currentPage = 'settings';
 
                         <label class="settings-item-row" style="cursor: pointer; margin: 0;">
                             <div class="settings-label-group">
-                                <strong>🔄 Notifikasi Watchdog / Failover</strong>
+                                <strong>ðŸ”„ Notifikasi Watchdog / Failover</strong>
                                 <span>Kirim pesan saat koneksi internet 4G terputus atau kembali online</span>
                             </div>
                             <input type="checkbox" id="checkTgWatchdog" <?= !empty($telegram['notify_watchdog']) ? 'checked' : '' ?> style="width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer;">
@@ -901,8 +901,8 @@ $currentPage = 'settings';
 
                         <label class="settings-item-row" style="cursor: pointer; margin: 0;">
                             <div class="settings-label-group">
-                                <strong>🌡️ Peringatan Termal Suhu Tinggi</strong>
-                                <span>Kirim peringatan darurat jika suhu CPU Orange Pi melebihi 70°C</span>
+                                <strong>ðŸŒ¡ï¸ Peringatan Termal Suhu Tinggi</strong>
+                                <span>Kirim peringatan darurat jika suhu CPU Orange Pi melebihi 70Â°C</span>
                             </div>
                             <input type="checkbox" id="checkTgTemp" <?= !empty($telegram['notify_temp']) ? 'checked' : '' ?> style="width: 18px; height: 18px; accent-color: #0284c7; cursor: pointer;">
                         </label>
@@ -1073,6 +1073,50 @@ $currentPage = 'settings';
                             <span>Matikan Daya (Power Off)</span>
                         </button>
                     </div>
+                </div>
+            </div>
+
+            <!-- Scheduled Reboot Section -->
+            <div class="room-card" style="margin-top:20px;">
+                <div class="room-card-top">
+                    <span class="room-card-title">Jadwal Reboot Otomatis</span>
+                    <span class="room-spec-pill"><i class="bi bi-clock-history"></i></span>
+                </div>
+                <div class="room-card-body">
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <select id="schedHour" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
+                            <?php for($i=0;$i<24;$i++) echo "<option value='$i' ".($i===4?'selected':'').">$i</option>"; ?>
+                        </select>
+                        <span style="font-size:18px;">:</span>
+                        <select id="schedMinute" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
+                            <?php for($i=0;$i<60;$i+=5) echo "<option value='$i'>$i</option>"; ?>
+                        </select>
+                        <button type="button" class="btn-primary-neumorphic" onclick="setScheduledReboot()" style="padding:8px 16px;">
+                            <i class="bi bi-clock"></i> <span>Set Jadwal</span>
+                        </button>
+                        <button type="button" class="btn-action-round" onclick="cancelScheduledReboot()" style="padding:8px 16px;">
+                            <span>Batal</span>
+                        </button>
+                    </div>
+                    <p id="schedStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
+                </div>
+            </div>
+
+            <!-- Wake-on-LAN Section -->
+            <div class="room-card" style="margin-top:20px;">
+                <div class="room-card-top">
+                    <span class="room-card-title">Wake-on-LAN</span>
+                    <span class="room-spec-pill"><i class="bi bi-pc-display"></i></span>
+                </div>
+                <div class="room-card-body">
+                    <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                        <input type="text" id="wolMac" placeholder="MAC Address (xx:xx:xx:xx:xx:xx)"
+                               style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:200px;">
+                        <button type="button" class="btn-primary-neumorphic" onclick="sendWOL()" style="padding:8px 16px;">
+                            <i class="bi bi-power"></i> <span>Wake</span>
+                        </button>
+                    </div>
+                    <p id="wolStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
                 </div>
             </div>
         </main>
@@ -1391,32 +1435,6 @@ $currentPage = 'settings';
 </html>
 
 
-<!-- Scheduled Reboot Section -->
-<div class="room-card" style="margin-top:20px;">
-    <div class="room-card-top">
-        <span class="room-card-title">Jadwal Reboot Otomatis</span>
-        <span class="room-spec-pill"><i class="bi bi-clock-history"></i></span>
-    </div>
-    <div class="room-card-body">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <select id="schedHour" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
-                <?php for($i=0;$i<24;$i++) echo "<option value='$i' ".($i===4?'selected':'').">$i</option>"; ?>
-            </select>
-            <span style="font-size:18px;">:</span>
-            <select id="schedMinute" style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);">
-                <?php for($i=0;$i<60;$i+=5) echo "<option value='$i'>$i</option>"; ?>
-            </select>
-            <button type="button" class="btn-primary-neumorphic" onclick="setScheduledReboot()" style="padding:8px 16px;">
-                <i class="bi bi-clock"></i> <span>Set Jadwal</span>
-            </button>
-            <button type="button" class="btn-action-round" onclick="cancelScheduledReboot()" style="padding:8px 16px;">
-                <span>Batal</span>
-            </button>
-        </div>
-        <p id="schedStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
-    </div>
-</div>
-
 <script>
 async function setScheduledReboot() {
     var h = document.getElementById('schedHour').value;
@@ -1445,24 +1463,6 @@ fetch('api.php?action=get_scheduled_reboot').then(r=>r.json()).then(data=>{
 });
 </script>
 
-
-<!-- Wake-on-LAN Section -->
-<div class="room-card" style="margin-top:20px;">
-    <div class="room-card-top">
-        <span class="room-card-title">Wake-on-LAN</span>
-        <span class="room-spec-pill"><i class="bi bi-pc-display"></i></span>
-    </div>
-    <div class="room-card-body">
-        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-            <input type="text" id="wolMac" placeholder="MAC Address (xx:xx:xx:xx:xx:xx)" 
-                   style="padding:8px;border-radius:var(--radius-sm);background:var(--bg-inset);color:var(--text-main);width:200px;">
-            <button type="button" class="btn-primary-neumorphic" onclick="sendWOL()" style="padding:8px 16px;">
-                <i class="bi bi-power"></i> <span>Wake</span>
-            </button>
-        </div>
-        <p id="wolStatus" style="font-size:11px;color:var(--text-muted);margin-top:8px;"></p>
-    </div>
-</div>
 
 <script>
 async function sendWOL() {

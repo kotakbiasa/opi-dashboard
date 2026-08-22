@@ -2,6 +2,18 @@
 
 class SystemMonitor {
 
+    /** Short-lived request caches to avoid recomputing heavy stats on every poll */
+    private static ?array $deviceUsageCache = null;
+    private static float $deviceUsageCacheTime = 0;
+    private static ?array $netStatsCache = null;
+    private static float $netStatsCacheTime = 0;
+    private static ?array $modemCache = null;
+    private static float $modemCacheTime = 0;
+    private static ?array $adguardCache = null;
+    private static float $adguardCacheTime = 0;
+    private const CACHE_TTL_SECONDS = 2.0;
+    private const STATE_CACHE_FILE = '/tmp/opi_full_state_cache.json';
+
     /**
      * Get real-time CPU usage percentage
      */
@@ -45,7 +57,7 @@ class SystemMonitor {
             }
         }
 
-        $load = sys_getloadavg();
+        $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0.0, 0.0, 0.0];
         $est = ($load[0] / 4.0) * 100.0;
         return round(min(100.0, max(1.0, $est)), 1);
     }
@@ -128,7 +140,8 @@ class SystemMonitor {
     public static function getRamInfo(): array {
         $meminfo = '/proc/meminfo';
         if (!file_exists($meminfo)) {
-            return ['total' => 1000, 'used' => 500, 'free' => 500, 'percent' => 50];
+            return ['total_mb' => 1000, 'used_mb' => 500, 'free_mb' => 500, 'percent' => 50,
+                    'swap_total_mb' => 0, 'swap_used_mb' => 0];
         }
 
         $lines = file($meminfo);
@@ -202,7 +215,7 @@ class SystemMonitor {
         if ($hours > 0 || $days > 0) $uptimeFormatted .= "{$hours}h ";
         $uptimeFormatted .= "{$minutes}m";
 
-        $load = sys_getloadavg();
+        $load = function_exists('sys_getloadavg') ? sys_getloadavg() : [0.0, 0.0, 0.0];
 
         return [
             'seconds' => $uptimeSec,
@@ -245,6 +258,13 @@ class SystemMonitor {
      * Get Network Interfaces & Real-time Throughput (RX/TX)
      */
     public static function getNetworkStats(): array {
+        // Memoized: getFullState() and getDeviceUsageStats() share one measurement
+        // per request, so the second call does not compute a near-zero delta.
+        $cacheNow = microtime(true);
+        if (self::$netStatsCache !== null && ($cacheNow - self::$netStatsCacheTime) < self::CACHE_TTL_SECONDS) {
+            return self::$netStatsCache;
+        }
+
         $devFile = '/proc/net/dev';
         $interfaces = [];
         if (!file_exists($devFile)) return $interfaces;
@@ -327,6 +347,8 @@ class SystemMonitor {
         }
 
         file_put_contents($prevTrafficFile, json_encode($currentSnapshot));
+        self::$netStatsCache = $interfaces;
+        self::$netStatsCacheTime = microtime(true);
         return $interfaces;
     }
 
@@ -456,38 +478,46 @@ class SystemMonitor {
      * Query live telemetry from Huawei HiLink 4G LTE USB Modem (192.168.8.1)
      */
     public static function getModemInfo(): array {
+        $cacheNow = microtime(true);
+        if (self::$modemCache !== null && ($cacheNow - self::$modemCacheTime) < self::CACHE_TTL_SECONDS) {
+            return self::$modemCache;
+        }
+
+        // Honest placeholders: only replaced with genuine values when the modem API responds.
         $default = [
-            'connected' => true,
-            'model' => 'Huawei E3372 (CL2E3372HM)',
-            'operator' => 'XL',
-            'numeric' => '51011',
-            'network_type' => '4G LTE',
-            'band' => 'Band 40 (2300 MHz)',
-            'bandwidth' => '20 MHz',
-            'signal_bars' => 4,
+            'connected' => false,
+            'live' => false,
+            'model' => 'Huawei HiLink Modem',
+            'operator' => '',
+            'numeric' => '',
+            'network_type' => '',
+            'band' => '',
+            'bandwidth' => '',
+            'signal_bars' => 0,
             'max_signal' => 5,
-            'rssi' => '-67 dBm',
-            'rsrp' => '-102 dBm',
-            'rsrq' => '-13 dB',
-            'sinr' => '9 dB',
-            'pci' => '165',
-            'cell_id' => '245850491',
-            'wan_ip' => '10.100.44.215',
-            'imei' => '866850027692889',
-            'imsi' => '510116399323454',
-            'iccid' => '8962119763993234545',
-            'firmware' => '22.333.01.00.00',
-            'webui' => '17.100.15.02.38',
-            'primary_dns' => '112.215.203.246',
-            'session_dl_mb' => 1434.7,
-            'session_ul_mb' => 120.6,
-            'total_dl_gb' => 1008.9,
-            'total_ul_gb' => 68.5
+            'rssi' => '',
+            'rsrp' => '',
+            'rsrq' => '',
+            'sinr' => '',
+            'pci' => '',
+            'cell_id' => '',
+            'wan_ip' => '',
+            'imei' => '',
+            'imsi' => '',
+            'iccid' => '',
+            'firmware' => '',
+            'webui' => '',
+            'primary_dns' => '',
+            'session_dl_mb' => 0.0,
+            'session_ul_mb' => 0.0,
+            'total_dl_gb' => 0.0,
+            'total_ul_gb' => 0.0
         ];
 
         try {
             $s = @file_get_contents("http://192.168.8.1/api/webserver/SesTokInfo", false, stream_context_create(['http' => ['timeout' => 1.5]]));
             if ($s) {
+                $default['live'] = true;
                 preg_match("/<SesInfo>(.*?)<\/SesInfo>/", $s, $m1);
                 preg_match("/<TokInfo>(.*?)<\/TokInfo>/", $s, $m2);
                 $ses = $m1[1] ?? "";
@@ -573,24 +603,26 @@ class SystemMonitor {
             // Return defaults
         }
 
-        // Computed & Extended Telecom Telemetry
-        $cellIdNum = (int)preg_replace('/[^\d]/', '', $default['cell_id'] ?? '245850491');
-        $default['enodeb_id'] = ($cellIdNum > 0) ? (string)floor($cellIdNum / 256) : '960353';
-        $default['sector_id'] = ($cellIdNum > 0) ? (string)($cellIdNum % 256) : '123';
-        $default['tac'] = '12450';
-        $default['mcc'] = !empty($default['numeric']) ? substr($default['numeric'], 0, 3) : '510';
-        $default['mnc'] = !empty($default['numeric']) ? substr($default['numeric'], 3) : '11';
-        $default['duplex'] = 'TDD (Time-Division)';
-        $default['lte_category'] = 'LTE Cat.4 (150 Mbps DL / 50 Mbps UL)';
-        $default['roaming_status'] = 'Non-Roaming (Home PLMN)';
-        $default['sim_status'] = 'Valid & Siap (PIN Terbuka)';
-        $default['host_iface'] = 'enx0c5b8f279a64';
-        $default['host_ip'] = '192.168.8.100';
+        // Computed & Extended Telecom Telemetry (only derived from genuine values)
+        $cellIdNum = (int)preg_replace('/[^\d]/', '', $default['cell_id'] ?? '');
+        $default['enodeb_id'] = ($cellIdNum > 0) ? (string)floor($cellIdNum / 256) : '';
+        $default['sector_id'] = ($cellIdNum > 0) ? (string)($cellIdNum % 256) : '';
+        $default['tac'] = '';
+        $default['mcc'] = !empty($default['numeric']) ? substr($default['numeric'], 0, 3) : '';
+        $default['mnc'] = !empty($default['numeric']) ? substr($default['numeric'], 3) : '';
+        $default['duplex'] = '';
+        $default['lte_category'] = '';
+        $default['roaming_status'] = '';
+        $default['sim_status'] = '';
+        $default['host_iface'] = 'enx*';
+        $default['host_ip'] = '192.168.8.x';
         $default['gateway_ip'] = '192.168.8.1';
-        $default['usb_bus'] = 'Bus 001 Device 003 (12d1:14dc Huawei)';
+        $default['usb_bus'] = '';
         $default['mtu'] = '1500 bytes';
-        $default['dns_secondary'] = '8.8.8.8';
+        $default['dns_secondary'] = '';
 
+        self::$modemCache = $default;
+        self::$modemCacheTime = microtime(true);
         return $default;
     }
 
@@ -602,12 +634,12 @@ class SystemMonitor {
         $val = str_ireplace(['&gt;', '&lt;', '&amp;'], ['>', '<', '&'], $val);
 
         $prefix = '';
-        if (strpos($val, '>=') === 0 || strpos($val, '≥') === 0) {
-            $prefix = '≥ ';
-            $val = preg_replace('/^[>=≥\s]+/', '', $val);
-        } elseif (strpos($val, '<=') === 0 || strpos($val, '≤') === 0) {
-            $prefix = '≤ ';
-            $val = preg_replace('/^[<=≤\s]+/', '', $val);
+        if (strpos($val, '>=') === 0 || strpos($val, 'â‰¥') === 0) {
+            $prefix = 'â‰¥ ';
+            $val = preg_replace('/^[>=â‰¥\s]+/', '', $val);
+        } elseif (strpos($val, '<=') === 0 || strpos($val, 'â‰¤') === 0) {
+            $prefix = 'â‰¤ ';
+            $val = preg_replace('/^[<=â‰¤\s]+/', '', $val);
         } elseif (strpos($val, '>') === 0) {
             $prefix = '> ';
             $val = preg_replace('/^[>\s]+/', '', $val);
@@ -624,8 +656,14 @@ class SystemMonitor {
 
     /**
      * Get Detailed Per-Device Bandwidth & Quota Usage
+     * Memoized briefly so getFullState() + getOverallUsageStats() share one computation.
      */
     public static function getDeviceUsageStats(): array {
+        $now = microtime(true);
+        if (self::$deviceUsageCache !== null && ($now - self::$deviceUsageCacheTime) < self::CACHE_TTL_SECONDS) {
+            return self::$deviceUsageCache;
+        }
+
         $clients = self::getConnectedClients();
         $usageFile = '/tmp/opi_device_usage_tracker.json';
         $history = file_exists($usageFile) ? json_decode(file_get_contents($usageFile), true) : [];
@@ -633,6 +671,27 @@ class SystemMonitor {
 
         $deviceUsage = [];
         $totalNetworkBytes = 0;
+
+        // Measure REAL interface throughput once, then distribute it across active
+        // clients using a stable per-MAC weight. Totals are genuine; the per-device
+        // split is an estimate (kernel-level per-client accounting is not available).
+        $netStats = self::getNetworkStats();
+        $totalRxKbps = 0.0;
+        $totalTxKbps = 0.0;
+        foreach ($netStats as $n) {
+            if (!empty($n['is_up'])) {
+                $totalRxKbps += (float)$n['rx_rate_kbps'];
+                $totalTxKbps += (float)$n['tx_rate_kbps'];
+            }
+        }
+
+        $weights = [];
+        $weightSum = 0;
+        foreach ($clients as $c) {
+            $w = (hexdec(substr(strtoupper($c['mac']), -4)) % 1000) + 100;
+            $weights[strtoupper($c['mac'])] = $w;
+            $weightSum += $w;
+        }
 
         foreach ($clients as $c) {
             $mac = strtoupper($c['mac']);
@@ -658,15 +717,12 @@ class SystemMonitor {
                 $color = '#0d9488';
             }
 
-            // Read or initialize persistent baseline usage
+            // Read or initialize persistent baseline usage (honest: starts at zero)
             if (!isset($history[$mac])) {
-                $seed = hexdec(substr(md5($mac), 0, 4));
-                $initDl = 180.0 + ($seed % 650);
-                $initUl = 25.0 + ($seed % 80);
                 $history[$mac] = [
-                    'dl_mb' => (float)$initDl,
-                    'ul_mb' => (float)$initUl,
-                    'first_seen' => time() - (1800 + ($seed % 7200)),
+                    'dl_mb' => 0.0,
+                    'ul_mb' => 0.0,
+                    'first_seen' => time(),
                     'last_update' => $now,
                     'current_rx_kbps' => 0.0,
                     'current_tx_kbps' => 0.0
@@ -674,9 +730,10 @@ class SystemMonitor {
             }
 
             $timeElapsed = max(0.5, $now - ($history[$mac]['last_update'] ?? $now));
-            $rxRate = (float)(rand(8, 95) + (hexdec(substr($mac, -1)) * 12));
-            $txRate = (float)(rand(2, 20) + (hexdec(substr($mac, -2, 1)) * 2));
-            
+            $share = $weights[$mac] / max(1, $weightSum);
+            $rxRate = $totalRxKbps * $share;
+            $txRate = $totalTxKbps * $share;
+
             $addedDlMb = ($rxRate * $timeElapsed) / 1024;
             $addedUlMb = ($txRate * $timeElapsed) / 1024;
 
@@ -727,7 +784,67 @@ class SystemMonitor {
             return $b['total_mb'] <=> $a['total_mb'];
         });
 
-        return array_values($deviceUsage);
+        self::$deviceUsageCache = array_values($deviceUsage);
+        self::$deviceUsageCacheTime = microtime(true);
+        return self::$deviceUsageCache;
+    }
+
+    /**
+     * Accumulate REAL modem session counters into a persistent daily history file.
+     * Handles counter resets (modem reboot / reconnect) gracefully.
+     */
+    private static function updateTrafficHistory(array $modem): void {
+        if (empty($modem['live'])) return; // No genuine modem data -> don't fabricate history
+
+        $sessionDlMb = (float)($modem['session_dl_mb'] ?? 0);
+        $sessionUlMb = (float)($modem['session_ul_mb'] ?? 0);
+
+        $histFile = dirname(__DIR__) . '/data/traffic_history.json';
+        $history = file_exists($histFile) ? json_decode((string)@file_get_contents($histFile), true) : [];
+        if (!is_array($history)) $history = [];
+
+        // Prune entries older than 90 days
+        $cutoff = strtotime('-90 days');
+        foreach (array_keys($history) as $day) {
+            if (strtotime((string)$day) < $cutoff) unset($history[$day]);
+        }
+
+        $prevFile = '/tmp/opi_modem_prev_counters.json';
+        $prev = file_exists($prevFile) ? json_decode((string)@file_get_contents($prevFile), true) : null;
+
+        $today = date('Y-m-d');
+        if (!isset($history[$today]) || !is_array($history[$today])) {
+            $history[$today] = ['dl_mb' => 0.0, 'ul_mb' => 0.0];
+        }
+
+        if (is_array($prev) && isset($prev['dl'], $prev['ul']) && ($prev['day'] ?? '') === $today) {
+            $dDl = $sessionDlMb - (float)$prev['dl'];
+            $dUl = $sessionUlMb - (float)$prev['ul'];
+            // Negative delta means the modem counter reset: count the fresh session in full
+            if ($dDl < 0) $dDl = $sessionDlMb;
+            if ($dUl < 0) $dUl = $sessionUlMb;
+        } else {
+            // First observation today / after boot: start counting forward from now
+            $dDl = 0.0;
+            $dUl = 0.0;
+        }
+
+        $history[$today]['dl_mb'] = round((float)$history[$today]['dl_mb'] + $dDl, 2);
+        $history[$today]['ul_mb'] = round((float)$history[$today]['ul_mb'] + $dUl, 2);
+
+        // 3-hour bucket breakdown for the daily chart (00-03, 03-06, ...)
+        if (!isset($history[$today]['hours']) || !is_array($history[$today]['hours'])) {
+            $history[$today]['hours'] = [];
+        }
+        $bucket = 'h' . intdiv((int)date('G'), 3);
+        if (!isset($history[$today]['hours'][$bucket]) || !is_array($history[$today]['hours'][$bucket])) {
+            $history[$today]['hours'][$bucket] = ['dl_mb' => 0.0, 'ul_mb' => 0.0];
+        }
+        $history[$today]['hours'][$bucket]['dl_mb'] = round((float)$history[$today]['hours'][$bucket]['dl_mb'] + $dDl, 2);
+        $history[$today]['hours'][$bucket]['ul_mb'] = round((float)$history[$today]['hours'][$bucket]['ul_mb'] + $dUl, 2);
+
+        @file_put_contents($histFile, json_encode($history), LOCK_EX);
+        @file_put_contents($prevFile, json_encode(['day' => $today, 'time' => microtime(true), 'dl' => $sessionDlMb, 'ul' => $sessionUlMb]), LOCK_EX);
     }
 
     /**
@@ -747,29 +864,54 @@ class SystemMonitor {
             $totalTxRate += $d['tx_kbps'];
         }
 
-        $sessionDlMb = (float)($modem['session_dl_mb'] ?? 1434.7);
-        $sessionUlMb = (float)($modem['session_ul_mb'] ?? 125.5);
-        $totalDlGb = (float)($modem['total_dl_gb'] ?? 940.4);
-        $totalUlGb = (float)($modem['total_ul_gb'] ?? 64.0);
+        // Accumulate real modem counters into the persistent daily history
+        self::updateTrafficHistory($modem);
 
-        // 1. Harian (Daily)
-        $dailyDlGb = round(($sessionDlMb / 1024) + 1.15, 2);
-        $dailyUlGb = round(($sessionUlMb / 1024) + 0.18, 2);
+        $sessionDlMb = (float)($modem['session_dl_mb'] ?? 0);
+        $sessionUlMb = (float)($modem['session_ul_mb'] ?? 0);
+        $totalDlGb = (float)($modem['total_dl_gb'] ?? 0);
+        $totalUlGb = (float)($modem['total_ul_gb'] ?? 0);
+
+        // Load real accumulated history (data/traffic_history.json)
+        $histFile = dirname(__DIR__) . '/data/traffic_history.json';
+        $history = file_exists($histFile) ? json_decode((string)@file_get_contents($histFile), true) : [];
+        if (!is_array($history)) $history = [];
+        $today = date('Y-m-d');
+
+        // 1. Harian (Daily): today's accumulated totals
+        $dailyDlGb = round(((float)($history[$today]['dl_mb'] ?? 0)) / 1024, 2);
+        $dailyUlGb = round(((float)($history[$today]['ul_mb'] ?? 0)) / 1024, 2);
         $dailyTotalGb = round($dailyDlGb + $dailyUlGb, 2);
 
-        // 2. Mingguan (Weekly)
-        $weeklyDlGb = round($dailyDlGb * 4.6, 2);
-        $weeklyUlGb = round($dailyUlGb * 4.6, 2);
+        // 2. Mingguan (Weekly): sum of the last 7 days
+        $weeklyDlMb = 0.0;
+        $weeklyUlMb = 0.0;
+        for ($i = 0; $i < 7; $i++) {
+            $day = date('Y-m-d', strtotime("-{$i} days"));
+            $weeklyDlMb += (float)($history[$day]['dl_mb'] ?? 0);
+            $weeklyUlMb += (float)($history[$day]['ul_mb'] ?? 0);
+        }
+        $weeklyDlGb = round($weeklyDlMb / 1024, 2);
+        $weeklyUlGb = round($weeklyUlMb / 1024, 2);
         $weeklyTotalGb = round($weeklyDlGb + $weeklyUlGb, 2);
 
-        // 3. Bulanan (Monthly)
+        // 3. Bulanan (Monthly): sum of the current calendar month
+        $monthPrefix = date('Y-m');
+        $monthlyDlMb = 0.0;
+        $monthlyUlMb = 0.0;
+        foreach ($history as $day => $v) {
+            if (strpos((string)$day, $monthPrefix) === 0 && is_array($v)) {
+                $monthlyDlMb += (float)($v['dl_mb'] ?? 0);
+                $monthlyUlMb += (float)($v['ul_mb'] ?? 0);
+            }
+        }
         $monthlyLimitGb = 150.0;
-        $monthlyDlGb = round(min(130.0, ($totalDlGb % 120) + 38.5), 2);
-        $monthlyUlGb = round(min(20.0, ($totalUlGb % 18) + 6.2), 2);
+        $monthlyDlGb = round($monthlyDlMb / 1024, 2);
+        $monthlyUlGb = round($monthlyUlMb / 1024, 2);
         $monthlyTotalGb = round($monthlyDlGb + $monthlyUlGb, 2);
         $monthlyPct = round(($monthlyTotalGb / $monthlyLimitGb) * 100, 1);
 
-        // 4. Total Keseluruhan (Lifetime)
+        // 4. Total Keseluruhan (Lifetime): straight from the modem's own counters
         $lifetimeTotalGb = round($totalDlGb + $totalUlGb, 1);
 
         return [
@@ -802,19 +944,25 @@ class SystemMonitor {
      * Get Live Telemetry & Stats from AdGuard Home on 127.0.0.1:3000
      */
     public static function getAdguardInfo(): array {
+        $cacheNow = microtime(true);
+        if (self::$adguardCache !== null && ($cacheNow - self::$adguardCacheTime) < self::CACHE_TTL_SECONDS) {
+            return self::$adguardCache;
+        }
+
+        // Honest placeholders: only replaced with genuine values when the AdGuard API responds.
         $default = [
-            'running' => true,
-            'version' => 'v0.107.78',
-            'protection_enabled' => true,
+            'running' => false,
+            'version' => '',
+            'protection_enabled' => false,
             'dns_port' => 53,
             'http_port' => 3000,
-            'num_dns_queries' => 28367,
-            'num_blocked_filtering' => 2743,
-            'blocked_percent' => 9.67,
-            'num_replaced_safesearch' => 1935,
-            'avg_processing_time_ms' => 0.42,
-            'rules_count' => 155921,
-            'filter_name' => 'AdGuard DNS filter',
+            'num_dns_queries' => 0,
+            'num_blocked_filtering' => 0,
+            'blocked_percent' => 0,
+            'num_replaced_safesearch' => 0,
+            'avg_processing_time_ms' => 0,
+            'rules_count' => 0,
+            'filter_name' => '',
             'filter_updated' => 'Aktif (Terbaru)',
             'top_blocked_domains' => [],
             'top_queried_domains' => [],
@@ -830,7 +978,7 @@ class SystemMonitor {
                 $status = json_decode($statusJson, true);
                 if ($status) {
                     $default['running'] = (bool)($status['running'] ?? true);
-                    $default['version'] = $status['version'] ?? 'v0.107.78';
+                    $default['version'] = $status['version'] ?? '';
                     $default['protection_enabled'] = (bool)($status['protection_enabled'] ?? true);
                     $default['dns_port'] = (int)($status['dns_port'] ?? 53);
                     $default['http_port'] = (int)($status['http_port'] ?? 3000);
@@ -888,21 +1036,37 @@ class SystemMonitor {
             if ($filterJson) {
                 $filt = json_decode($filterJson, true);
                 if (!empty($filt['filters'][0])) {
-                    $default['rules_count'] = (int)($filt['filters'][0]['rules_count'] ?? 155921);
-                    $default['filter_name'] = $filt['filters'][0]['name'] ?? 'AdGuard DNS filter';
+                    $default['rules_count'] = (int)($filt['filters'][0]['rules_count'] ?? 0);
+                    $default['filter_name'] = $filt['filters'][0]['name'] ?? '';
                 }
             }
         } catch (\Throwable $e) {
             // Return defaults
         }
 
+        self::$adguardCache = $default;
+        self::$adguardCacheTime = microtime(true);
         return $default;
     }
 
     /**
-     * Get Complete Board System State for Dashboard
+     * Get Complete Board System State for Dashboard.
+     * Cached to /tmp with a short TTL: dashboard pages poll every 2s, so repeated
+     * requests within the TTL window reuse one snapshot instead of re-scanning everything.
+     * Pass $fresh = true right after a mutation (toggle LED, restart service, ...) to bypass it.
      */
-    public static function getFullState(): array {
+    public static function getFullState(bool $fresh = false): array {
+        $now = microtime(true);
+        if (!$fresh && file_exists(self::STATE_CACHE_FILE)) {
+            $cached = json_decode((string)@file_get_contents(self::STATE_CACHE_FILE), true);
+            if (is_array($cached)
+                && isset($cached['timestamp'], $cached['_cache_time'])
+                && ($now - (float)$cached['_cache_time']) < self::CACHE_TTL_SECONDS) {
+                unset($cached['_cache_time']);
+                return $cached;
+            }
+        }
+
         $cpuUsage = self::getCpuUsage();
         $cpuTemp = self::getCpuTemp();
         $ram = self::getRamInfo();
@@ -920,7 +1084,7 @@ class SystemMonitor {
         $overallUsage = self::getOverallUsageStats();
         $adguard = self::getAdguardInfo();
 
-        return [
+        $state = [
             'board' => [
                 'name' => 'Orange Pi Zero 2',
                 'hostname' => gethostname() ?: 'orangepizero2',
@@ -967,6 +1131,13 @@ class SystemMonitor {
             'adguard' => $adguard,
             'timestamp' => time()
         ];
+
+        // Persist snapshot for cross-request reuse (internal key stripped on read)
+        $state['_cache_time'] = microtime(true);
+        @file_put_contents(self::STATE_CACHE_FILE, json_encode($state), LOCK_EX);
+        unset($state['_cache_time']);
+
+        return $state;
     }
 
     public static function getAllState(): array {

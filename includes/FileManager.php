@@ -15,6 +15,26 @@ class FileManager {
     ];
 
     /**
+     * Enforce the allowed-bases whitelist.
+     * Any path resolving outside the approved roots falls back to the default root.
+     */
+    private static function assertAllowed(string $path): string {
+        $real = realpath($path);
+        // For not-yet-existing paths (new files/folders) validate the deepest existing ancestor
+        $candidate = $real !== false ? $real : $path;
+        $norm = rtrim(str_replace('\\', '/', $candidate), '/');
+        if ($norm === '') return self::$defaultRoot;
+
+        foreach (self::$allowedBases as $base) {
+            $baseNorm = rtrim(str_replace('\\', '/', $base), '/');
+            if ($norm === $baseNorm || strpos($norm, $baseNorm . '/') === 0) {
+                return $path;
+            }
+        }
+        return self::$defaultRoot;
+    }
+
+    /**
      * Resolve and Validate Path Safely
      */
     public static function resolvePath(string $rawPath): string {
@@ -28,12 +48,12 @@ class FileManager {
             // Path might be a new file to create
             $dir = realpath(dirname($rawPath));
             if ($dir !== false) {
-                return rtrim($dir, '/') . '/' . basename($rawPath);
+                return self::assertAllowed(rtrim($dir, '/') . '/' . basename($rawPath));
             }
             return self::$defaultRoot;
         }
 
-        return $real;
+        return self::assertAllowed($real);
     }
 
     /**

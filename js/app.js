@@ -594,17 +594,18 @@ async function runSpeedTest() {
                 rightClientsList.innerHTML = freshState.clients.map(c => {
                     const meta = getDeviceMeta(c.name);
                     const shortMac = c.mac ? c.mac.slice(-8) : '00:00:00';
+                    const esc = window.escapeHtml || (v => String(v ?? '').replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[m])));
                     return `
                         <div class="member-item">
-                            <div class="member-avatar-wrap avatar-${meta.color}" title="${meta.type}">
+                            <div class="member-avatar-wrap avatar-${esc(meta.color)}" title="${esc(meta.type)}">
                                 ${meta.svg}
                             </div>
                             <div class="member-meta">
                                 <div class="member-name-row">
-                                    <h4 class="member-name">${c.name}</h4>
-                                    <span class="member-mac-tag">${shortMac}</span>
+                                    <h4 class="member-name">${esc(c.name)}</h4>
+                                    <span class="member-mac-tag">${esc(shortMac)}</span>
                                 </div>
-                                <span class="member-role">${c.ip} &bull; ${meta.type}</span>
+                                <span class="member-role">${esc(c.ip)} &bull; ${esc(meta.type)}</span>
                             </div>
                         </div>
                     `;

@@ -112,7 +112,7 @@ class SettingsManager {
         ];
 
         // 3. SoC, CPU & GPU Specs
-        $loadAvg = sys_getloadavg();
+        $loadAvg = function_exists('sys_getloadavg') ? sys_getloadavg() : [0.0, 0.0, 0.0];
         $soc = [
             'model' => 'Allwinner H616 (Quad-Core 64-bit SoC)',
             'cpu_arch' => 'ARMv8-A Cortex-A53 @ 1.51 GHz',
@@ -214,6 +214,9 @@ class SettingsManager {
         @shell_exec($cmd);
 
         $newGov = trim(@file_get_contents('/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor') ?: '');
+        if ($newGov !== $gov) {
+            return ['success' => false, 'error' => "Gagal menerapkan governor '{$gov}' (aktif: '{$newGov}'). Periksa izin akses cpufreq."];
+        }
 
         return [
             'success' => true,

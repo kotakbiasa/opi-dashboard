@@ -4,10 +4,25 @@ header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: DENY');
 header('X-XSS-Protection: 1; mode=block');
 header('Referrer-Policy: strict-origin-when-cross-origin');
-header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://fonts.googleapis.com; font-src 'self' https://fonts.gstatic.com; img-src 'self' data:; connect-src 'self'");
+header("Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net; font-src 'self'; img-src 'self' data:; connect-src 'self'");
 
 require_once __DIR__ . '/includes/Auth.php';
 require_once __DIR__ . '/includes/SystemMonitor.php';
+
+// Handle standard login form submission (POST dari login_view.php)
+$loginError = '';
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['username'], $_POST['password'])) {
+    if (!Auth::csrfVerify($_POST['csrf_token'] ?? null)) {
+        $loginError = 'Sesi tidak valid atau kedaluwarsa. Silakan coba lagi.';
+    } elseif (Auth::isRateLimited()) {
+        $loginError = 'Terlalu banyak percobaan login. Tunggu 60 detik.';
+    } elseif (Auth::login($_POST['username'], $_POST['password'], !empty($_POST['remember']))) {
+        header('Location: index.php');
+        exit;
+    } else {
+        $loginError = 'Nama pengguna atau kata sandi salah.';
+    }
+}
 
 $isLoggedIn = Auth::check();
 $state = SystemMonitor::getFullState();
@@ -260,6 +275,15 @@ $currentPage = 'home';
             // =========================================================================
             // 3. UI STATE SYNCHRONIZATION (Identical to usage.php)
             // =========================================================================
+            function escapeHtml(value) {
+                return String(value ?? '')
+                    .replace(/&/g, '&amp;')
+                    .replace(/</g, '&lt;')
+                    .replace(/>/g, '&gt;')
+                    .replace(/"/g, '&quot;')
+                    .replace(/'/g, '&#039;');
+            }
+
             function getDeviceMeta(name) {
                 const n = (name || '').toLowerCase();
                 if (/(phone|redmi|xiaomi|samsung|galaxy|poco|realme|vivo|oppo|huawei|iphone|android|enall|mobile)/i.test(n)) {
@@ -380,15 +404,15 @@ $currentPage = 'home';
                                 const shortMac = c.mac ? c.mac.slice(-8) : '00:00:00';
                                 return `
                                     <div class="member-item">
-                                        <div class="member-avatar-wrap avatar-${meta.color}" title="${meta.type}">
+                                        <div class="member-avatar-wrap avatar-${escapeHtml(meta.color)}" title="${escapeHtml(meta.type)}">
                                             ${meta.svg}
                                         </div>
                                         <div class="member-meta">
                                             <div class="member-name-row">
-                                                <h4 class="member-name">${c.name}</h4>
-                                                <span class="member-mac-tag">${shortMac}</span>
+                                                <h4 class="member-name">${escapeHtml(c.name)}</h4>
+                                                <span class="member-mac-tag">${escapeHtml(shortMac)}</span>
                                             </div>
-                                            <span class="member-role">${c.ip} &bull; ${meta.type}</span>
+                                            <span class="member-role">${escapeHtml(c.ip)} &bull; ${escapeHtml(meta.type)}</span>
                                         </div>
                                     </div>
                                 `;

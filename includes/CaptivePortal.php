@@ -367,8 +367,8 @@ class CaptivePortal {
             'expires_at' => $voucher['expires_at'],
             'remaining_sec' => max(0, $voucher['expires_at'] - $now),
             'remaining_formatted' => self::formatDuration(max(0, $voucher['expires_at'] - $now)),
-            'bytes_downloaded_mb' => rand(15, 60),
-            'bytes_uploaded_mb' => rand(3, 12),
+            'bytes_downloaded_mb' => 0.0,
+            'bytes_uploaded_mb' => 0.0,
             'is_trial' => false
         ];
 
@@ -441,8 +441,8 @@ class CaptivePortal {
             'expires_at' => $expiresAt,
             'remaining_sec' => $durationSec,
             'remaining_formatted' => self::formatDuration($durationSec),
-            'bytes_downloaded_mb' => 24.8,
-            'bytes_uploaded_mb' => 4.2,
+            'bytes_downloaded_mb' => 0.0,
+            'bytes_uploaded_mb' => 0.0,
             'is_trial' => false,
             'is_member' => true
         ];
@@ -556,8 +556,8 @@ class CaptivePortal {
             'expires_at' => $expiresAt,
             'remaining_sec' => $trialMinutes * 60,
             'remaining_formatted' => "{$trialMinutes} Menit",
-            'bytes_downloaded_mb' => 5.2,
-            'bytes_uploaded_mb' => 1.1,
+            'bytes_downloaded_mb' => 0.0,
+            'bytes_uploaded_mb' => 0.0,
             'is_trial' => true
         ];
 
@@ -717,26 +717,16 @@ class CaptivePortal {
     }
 
     /**
-     * Seed Initial Vouchers with REAL Client Leases
+     * Seed Initial Vouchers (all available; no fabricated usage history)
      */
     private static function seedInitialVouchers(): void {
         $initial = [];
         $packages = array_values(self::$standardPackages);
-        $realClients = SystemMonitor::getConnectedClients();
         $now = time();
-        
+
         for ($i = 0; $i < 18; $i++) {
             $pkg = $packages[$i % count($packages)];
             $code = self::generateUniqueCode($initial);
-            $hasClient = isset($realClients[$i]);
-            $status = $hasClient ? 'active' : (($i < 5) ? 'used' : 'available');
-            
-            $clientMac = $hasClient ? $realClients[$i]['mac'] : null;
-            $clientIp = $hasClient ? $realClients[$i]['ip'] : null;
-            $clientName = $hasClient ? $realClients[$i]['name'] : null;
-
-            $activated = ($status !== 'available') ? ($now - rand(600, 3600)) : null;
-            $expires = ($status !== 'available') ? ($activated + $pkg['duration_sec']) : null;
 
             $initial[] = [
                 'code' => $code,
@@ -749,14 +739,14 @@ class CaptivePortal {
                 'speed_limit_mbps' => $pkg['speed_limit_mbps'],
                 'quota_mb' => $pkg['quota_mb'],
                 'quota_formatted' => $pkg['quota_formatted'],
-                'status' => $status,
+                'status' => 'available',
                 'created_at' => $now - ($i * 7200),
                 'created_formatted' => date('d M Y, H:i', $now - ($i * 7200)),
-                'activated_at' => $activated,
-                'expires_at' => $expires,
-                'used_by_mac' => $clientMac,
-                'used_by_ip' => $clientIp,
-                'used_by_device' => $clientName
+                'activated_at' => null,
+                'expires_at' => null,
+                'used_by_mac' => null,
+                'used_by_ip' => null,
+                'used_by_device' => null
             ];
         }
 
